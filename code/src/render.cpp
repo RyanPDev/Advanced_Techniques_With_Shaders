@@ -366,8 +366,10 @@ void GLinit(int width, int height) {
 	Cube::setupCube();
 
 	// Crida al constructor de la classe amb els diferents objectes
+	Object camaro(carObj, glm::vec3(-3.11f, 1.6f, 2.71f), glm::vec3(0, 4.71f, 0), glm::vec3(0.05f, 0.05f, 0.05f), glm::vec3(0.1f, 0.1f, 0.1f), modelVS, modelFS, nullptr, carTexture);
 
 	// Emmagatzema els objectes creats al vector
+	objects.push_back(camaro);
 
 	// Carreguem varies textures diferents per poder spawnejar billboards randomitzades
 
@@ -375,7 +377,7 @@ void GLinit(int width, int height) {
 
 	// Creem i emmagatzemem billboards
 
-	// Alliberem memoria
+	// Alliberem memoria de textures
 
 	scene = Scene::PHONG; //--> Inicialitzem la primera escena
 }
@@ -405,6 +407,8 @@ void GLrender(float dt) {
 	RV::_modelView = glm::rotate(RV::_modelView, RV::rota[0], glm::vec3(0.f, 1.f, 0.f));
 	RV::_MVP = RV::_projection * RV::_modelView;
 	Axis::draw();
+
+	for (Object obj : objects) { obj.Update(); obj.Draw(light); }
 
 	ImGui::Render();
 }

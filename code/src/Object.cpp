@@ -8,7 +8,8 @@ Object::Object(const char* _objPath, glm::vec3 _startPos, glm::vec3 _startRot, g
 	name(_objPath), position(_startPos), rotation(_startRot), scale(_startScale), objectColor(_startColor), initPos(_startPos), initRot(_startRot), initScale(_startScale)
 {
 	bool res = loadOBJ(_objPath, vertices, uvs, normals);
-	data = stbi_load(texturePath, &texWidth, &texHeight, &nrChannels, 0); //--> Carreguem textura
+	//--> Carreguem textura
+	texturePath == nullptr ? data = false : data = stbi_load(texturePath, &texWidth, &texHeight, &nrChannels, 0);
 
 	numVertices = vertices.size();
 

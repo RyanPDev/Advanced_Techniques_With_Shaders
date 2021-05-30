@@ -9,9 +9,16 @@ const float PI{ glm::pi<float>() };
 // Cat
 const char* catObj = "obj/cat.obj";
 
+//Car
+const char* carObj = "obj/camaro.obj";
+
 #pragma endregion
 
 #pragma region Texture Paths
+
+//Car
+const char* carTexture = "materials/cat_texture.jpg";
+
 
 // Cube
 const char* cubeTextureC = "materials/checker_box.jpg";
