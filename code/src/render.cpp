@@ -263,7 +263,7 @@ namespace Cube {
 			stbi_image_free(data[i]);
 		}
 		// Array que determina quina textura s'aplica a cada vertex
-		int cubeTextures[] = { 
+		int cubeTextures[] = {
 		textureID[0],textureID[0],textureID[0],textureID[0],
 		textureID[1],textureID[1],textureID[1],textureID[1],
 		textureID[2],textureID[2],textureID[2],textureID[2],
@@ -366,33 +366,18 @@ void GLinit(int width, int height) {
 	Cube::setupCube();
 
 	// Crida al constructor de la classe amb els diferents objectes
-	Object Neko(catObj, glm::vec3(-3.11f, 1.6f, 2.71f), glm::vec3(0, 4.71f, 0), glm::vec3(1, 1, 1), glm::vec3(1, 1, 1), modelVS, modelFS, nullptr, catTexture);
-	Object explosionNeko(catObj, glm::vec3(0.0f, 6.0f, 3.8f), glm::vec3(0, 4.71f, 0), glm::vec3(0.5f, 0.5f, 0.5f), glm::vec3(1, 1, 1), explosionVS, explosionFS, explosionGS, catTexture);
 
 	// Emmagatzema els objectes creats al vector
-	objects.push_back(Neko);
-	objects.push_back(explosionNeko);
 
 	// Carreguem varies textures diferents per poder spawnejar billboards randomitzades
-	int texWidth[3], texHeight[3], nrChannels[3];
-	unsigned char* data[3];
-	data[0] = stbi_load(treeTexture1, &texWidth[0], &texHeight[0], &nrChannels[0], 0);
-	data[1] = stbi_load(treeTexture2, &texWidth[1], &texHeight[1], &nrChannels[1], 0);
-	data[2] = stbi_load(treeTexture3, &texWidth[2], &texHeight[2], &nrChannels[2], 0);
 
 	int random = 0;
 
 	// Creem i emmagatzemem billboards
-	for (int i = 0; i < NUM_BILLBOARDS; i++)
-	{
-		random = rand() % 3; // Tria una textura random per cada arbre
-		Billboard billboard(glm::vec3((rand() % 50) - 25, 0, (rand() % 50) - 25), data[random], texWidth[random], texHeight[random], bbVS, bbFS, bbGS);
-		billboards.push_back(billboard);
-	}
 
-	for (int i = 0; i < 3; i++) stbi_image_free(data[i]); // Alliberem memoria
+	// Alliberem memoria
 
-	scene = Scene::PHONG; //--> Inicialitzem la primera escena a la de la iluminació Phong
+	scene = Scene::PHONG; //--> Inicialitzem la primera escena
 }
 
 void GLcleanup() {
@@ -407,8 +392,7 @@ void GLcleanup() {
 	objects.clear(); //--> Allibera memòria del vector d'objectes
 
 	for (Billboard bb : billboards) bb.CleanUp();
-	billboards.clear(); //--> Allibera memòria del vector de billboardsç
-
+	billboards.clear(); //--> Allibera memòria del vector de billboards
 }
 
 void GLrender(float dt) {
@@ -422,29 +406,6 @@ void GLrender(float dt) {
 	RV::_MVP = RV::_projection * RV::_modelView;
 	Axis::draw();
 
-	switch (scene)
-	{
-	case Scene::PHONG:
-		// S'actualitza i es dibuixa a cada objecte del vector
-		objects[0].Update();
-		objects[0].Draw(light);
-		break;
-	case Scene::TEXTURING:
-		// S'actualitza i es dibuixa un cub amb textures diferents per cada cara
-		Cube::updateCube();
-		Cube::draw();
-		break;
-	case Scene::GEOMETRY_SHADERS: //--> Dibuixem billboards i l'animació d'explosió dels triangles a partir del geometry shader d'un model importat
-		for (Billboard bb : billboards) bb.Draw(GSI::width, GSI::height);
-
-		objects[1].Update();
-
-		// Animació d'explosió d'un model amb el geometry shader partint del codi proposat en https://learnopengl.com/Advanced-OpenGL/Geometry-Shader //
-		objects[1].Draw(GSI::currentTime, GSI::auxTime, GSI::magnitude, GSI::explosionAnim, GSI::subDivide);
-		break;
-	default:
-		break;
-	}
 	ImGui::Render();
 }
 
@@ -457,192 +418,6 @@ void GUI()
 
 	/////////////////////////////////////////////////////TODO
 	// Do your GUI code here....
-
-	if (ImGui::Button("Phong Scene")) { scene = Scene::PHONG; } ImGui::SameLine();
-	if (ImGui::Button("Texturing Scene")) { scene = Scene::TEXTURING; } ImGui::SameLine();
-	if (ImGui::Button("Geometry Scene"))
-	{
-		scene = Scene::GEOMETRY_SHADERS;
-		GSI::explosionAnim = false;
-		GSI::auxTime = ImGui::GetTime() + PI * 0.5f;
-	}
-	switch (scene)
-	{
-	case Scene::PHONG:
-#pragma region Lights
-		ImGui::NewLine();
-		//Botons per canviar dels tipus d'il·luminació
-		if (ImGui::RadioButton("Directional light", (int*)&light.type, (int)Light::EType::DIRECTIONAL))
-		{
-			light.intensity = 1.f;
-			light.position = glm::vec3{ 0.f, 1.f, 0.f };
-			light.type = Light::EType::DIRECTIONAL;
-		}
-		ImGui::SameLine();
-		if (ImGui::RadioButton("Point light", (int*)&light.type, (int)Light::EType::POINTLIGHT))
-		{
-			light.intensity = 3.f;
-			light.position = glm::vec3{ -4.f, 6.7f, 2.2f };
-			light.type = Light::EType::POINTLIGHT;
-		}
-		ImGui::SameLine();
-		if (ImGui::RadioButton("Spot light", (int*)&light.type, (int)Light::EType::SPOTLIGHT))
-		{
-			light.type = Light::EType::SPOTLIGHT;
-			light.intensity = 3.f;
-			light.position = glm::vec3{ 0.f, 2.9f, 13.5f };
-			light.spotLightDirection = glm::vec3{ 0.f, 0.f, -1.f };
-			light.spotLightAngle = 21.85f;
-		}
-		if (ImGui::CollapsingHeader("Ilumination parameters"))
-		{
-			ImGui::Indent();
-			//Switch per canviar la informació de la interfaç segons el tipus d'il·luminació que s'esta fent servir
-			switch (light.type)
-			{
-			case Light::EType::DIRECTIONAL:
-				ImGui::DragFloat3("Light Direction", (float*)&light.position, 0.005f, -1.f, 1.f);
-				break;
-			case Light::EType::POINTLIGHT:
-				ImGui::DragFloat3("Pointlight Position", (float*)&light.position, 0.1f, -50.f, 50.f);
-				break;
-			case Light::EType::SPOTLIGHT:
-				ImGui::DragFloat3("Spotlight Position", (float*)&light.position, 0.1f, -50.f, 50.f);
-				ImGui::DragFloat3("Spotlight Direction", (float*)&light.spotLightDirection, 0.005f, -1.f, 1.f);
-				ImGui::DragFloat("Spotlight angle", &light.spotLightAngle, 0.05f, 10.f, 50.f);
-				light.cutOff = glm::cos(glm::radians(light.spotLightAngle));
-
-				s = (light.attenuationActivated == 1) ? "Deactivate attenuation" : "Activate attenuation";
-
-				if (ImGui::Button(s.c_str())) {
-					light.attenuationActivated *= -1;
-				}
-				break;
-			}
-			ImGui::Unindent();
-
-			ImGui::Indent();
-			if (ImGui::CollapsingHeader("Lighting"))
-			{
-				ImGui::Indent();
-				ImGui::ColorEdit3("Light color", (float*)&light.color); //--> Color de la llum
-				ImGui::DragFloat("Light intensity", (float*)&light.intensity, 0.01f, 0.f, 10.f); //--> Intensitat de la llum
-				ImGui::Unindent();
-			}
-			if (ImGui::CollapsingHeader("Ambient/Diffuse lighting"))
-			{
-				ImGui::Indent();
-				ImGui::ColorEdit3("Ambientcolor", (float*)&light.ambientColor); //--> Color de la llum ambient
-				ImGui::DragFloat("Ambient strength", &light.ambientIntensity, 0.005f, 0.f, 3.f); //--> Intensitat de la llum ambient
-				ImGui::DragFloat("Diffuse strength", &light.diffuseIntensity, 0.01f, 0.f, 10.f); //--> Intensitat de la llum difusa
-				ImGui::Unindent();
-			}
-			if (ImGui::CollapsingHeader("Specular lighting"))
-			{
-				ImGui::Indent();
-				ImGui::ColorEdit3("Specular color", (float*)&light.specularColor); //--> Color de la llum especular
-				ImGui::DragFloat("Specular strength", &light.specularIntensity, 0.01f, 0.f, 10.f); //--> Intensitat de la llum especular
-				ImGui::DragFloat("Shininess value ", &light.shininessValue, 0.5f, 1.f, 256.f); //--> Quantitat de la brillentor de la llum especular
-				ImGui::Unindent();
-			}
-
-			ImGui::Unindent();
-		}
-
-#pragma endregion
-
-#pragma region Objects
-
-		if (ImGui::CollapsingHeader("Objects"))
-		{
-			ImGui::Indent();
-			//Informació modificable de cada objecte
-			s = objects[0].GetName() + " Color";
-			ImGui::ColorEdit3(s.c_str(), (float*)&objects[0].objectColor);
-
-			s = objects[0].GetName() + " Position";
-			ImGui::DragFloat3(s.c_str(), (float*)&objects[0].position, 0.01f, -50.f, 50.f);
-
-			s = objects[0].GetName() + " Rotation";
-			ImGui::DragFloat3(s.c_str(), (float*)&objects[0].rotation, 0.01f, 0.f, 360.f);
-
-			s = objects[0].GetName() + " Scale";
-			ImGui::DragFloat3(s.c_str(), (float*)&objects[0].scale, 0.01f, 0.01f, 50.f);
-			ImGui::Unindent();
-		}
-		break;
-
-#pragma endregion
-
-	case Scene::TEXTURING:
-		ImGui::NewLine();
-		ImGui::Indent();
-		ImGui::DragFloat3("Cube Position", (float*)&Cube::position, 0.01f, -50.f, 50.f);
-		ImGui::DragFloat3("Cube Rotation", (float*)&Cube::rotation, 0.01f, 0.f, 360.f);
-		ImGui::DragFloat3("Cube Scale", (float*)&Cube::scale, 0.01f, 0.01f, 50.f);
-		ImGui::Unindent();
-		break;
-	case Scene::GEOMETRY_SHADERS:
-		ImGui::NewLine();
-#pragma region Explosion
-
-		if (ImGui::CollapsingHeader("Explosion Animation"))
-		{
-			ImGui::Indent();
-			GSI::explosionAnim ? s = "Stop Animation" : s = "Start Animation"; //--> Botó per començar i para l'animació d'explosió
-			if (ImGui::Button(s.c_str()))
-			{
-				GSI::explosionAnim = !GSI::explosionAnim;
-				GSI::auxTime = ImGui::GetTime() + PI * 0.5f;
-			}
-
-			ImGui::Checkbox("Subdivide triangles", &GSI::subDivide); //--> Activar o desactivar subdivisió dels triangles
-
-			if (!GSI::explosionAnim) ImGui::DragFloat("Time", &GSI::currentTime, 0.02f, 0.0f, 10.f);
-			ImGui::DragFloat("Magnitude", &GSI::magnitude, 0.05f, 0.0f, 50.f);
-			ImGui::Unindent();
-		}
-
-#pragma endregion
-
-#pragma region Billboard
-
-		// Variables de les billboards i animació d'explosió a modificar desde l'interfaç
-		if (ImGui::CollapsingHeader("Billboard parameters"))
-		{
-			ImGui::Indent();
-			ImGui::DragFloat("Tree height", &GSI::height, 0.05f, 0.1f, 50.f);
-			ImGui::DragFloat("Tree width", &GSI::width, 0.05f, 0.1f, 50.f);
-			ImGui::Unindent();
-		}
-
-		if (ImGui::CollapsingHeader("Objects"))
-		{
-			ImGui::Indent();
-			for (int i = 1; i < objects.size(); i++)
-			{
-				ImGui::PushID(i);
-
-				s = std::to_string(i + 1) + ": " + objects[i].GetName() + " Position";
-				ImGui::DragFloat3(s.c_str(), (float*)&objects[i].position, 0.01f, -50.f, 50.f);
-
-				s = std::to_string(i + 1) + ": " + objects[i].GetName() + " Rotation";
-				ImGui::DragFloat3(s.c_str(), (float*)&objects[i].rotation, 0.01f, 0.f, 360.f);
-
-				s = std::to_string(i + 1) + ": " + objects[i].GetName() + " Scale";
-				ImGui::DragFloat3(s.c_str(), (float*)&objects[i].scale, 0.01f, 0.01f, 50.f);
-
-				ImGui::PopID();
-			}
-			ImGui::Unindent();
-		}
-
-#pragma endregion
-		break;
-	default:
-		break;
-	}
-	// .........................
 
 	ImGui::End();
 
