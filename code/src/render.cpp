@@ -1,29 +1,21 @@
-#include <GL\glew.h>
-#include <glm\gtc\type_ptr.hpp>
-#include <glm\gtc\matrix_transform.hpp>
-#include <cstdio>
-#include <cassert>
-
-#include <imgui\imgui.h>
-#include <imgui\imgui_impl_sdl_gl3.h>
+#define STB_IMAGE_IMPLEMENTATION
 
 #include "GL_framework.h"
 
-///////// fw decl
-namespace ImGui {
-	void Render();
-}
-namespace Axis {
-	void setupAxis();
-	void cleanupAxis();
-	void drawAxis();
-}
-////////////////
+#include "Object.h"
+#include "Billboard.h"
+#include "Constants.h"
+
+Light light;
+Scene scene;
+std::vector<Object> objects; //--> Vector que emmagatzema els objectes que s'instancien a l'escena.
+std::vector<Billboard> billboards; //--> Vector que emmagatzema les billboards que s'instancien a l'escena.
+std::string s; //--> String declarat global per no redeclarar-lo a cada frame. S'usa pels noms del ImGui.
 
 namespace RenderVars {
-	const float FOV = glm::radians(70.f);
-	const float zNear = 1.f;
-	const float zFar = 50.f;
+	float FOV = glm::radians(90.f);
+	float zNear = 1.f;
+	float zFar = 5000.f;
 
 	glm::mat4 _projection;
 	glm::mat4 _modelView;
@@ -41,6 +33,32 @@ namespace RenderVars {
 	float rota[2] = { 0.f, 0.f };
 }
 namespace RV = RenderVars;
+
+namespace GeometryShadersInfo
+{
+	// Explosion animation
+	bool explosionAnim = false;
+	float currentTime = 0;
+	float auxTime = 0;
+	float magnitude = 5;
+	bool subDivide = false;
+
+	// Billboards
+	float width = 5.0f;
+	float height = 10.0f;
+}
+namespace GSI = GeometryShadersInfo;
+
+///////// fw decl
+namespace ImGui {
+	void Render();
+}
+namespace Axis {
+	void setupAxis();
+	void cleanupAxis();
+	void draw();
+}
+//////////////
 
 void GLResize(int width, int height) {
 	glViewport(0, 0, width, height);
@@ -75,43 +93,11 @@ void GLmousecb(MouseEvent ev) {
 	RV::prevMouse.lasty = ev.posy;
 }
 
-//////////////////////////////////////////////////
-GLuint compileShader(const char* shaderStr, GLenum shaderType, const char* name = "") {
-	GLuint shader = glCreateShader(shaderType);
-	glShaderSource(shader, 1, &shaderStr, NULL);
-	glCompileShader(shader);
-	GLint res;
-	glGetShaderiv(shader, GL_COMPILE_STATUS, &res);
-	if (res == GL_FALSE) {
-		glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &res);
-		char* buff = new char[res];
-		glGetShaderInfoLog(shader, res, &res, buff);
-		fprintf(stderr, "Error Shader %s: %s", name, buff);
-		delete[] buff;
-		glDeleteShader(shader);
-		return 0;
-	}
-	return shader;
-}
-void linkProgram(GLuint program) {
-	glLinkProgram(program);
-	GLint res;
-	glGetProgramiv(program, GL_LINK_STATUS, &res);
-	if (res == GL_FALSE) {
-		glGetProgramiv(program, GL_INFO_LOG_LENGTH, &res);
-		char* buff = new char[res];
-		glGetProgramInfoLog(program, res, &res, buff);
-		fprintf(stderr, "Error Link: %s", buff);
-		delete[] buff;
-	}
-}
-
-////////////////////////////////////////////////// AXIS
+//////////////////////////////////////////////// AXIS
 namespace Axis {
+	Shader axisShader;
 	GLuint AxisVao;
 	GLuint AxisVbo[3];
-	GLuint AxisShader[2];
-	GLuint AxisProgram;
 
 	float AxisVerts[] = {
 		0.0, 0.0, 0.0,
@@ -134,23 +120,6 @@ namespace Axis {
 		2, 3,
 		4, 5
 	};
-	const char* Axis_vertShader =
-		"#version 330\n\
-in vec3 in_Position;\n\
-in vec4 in_Color;\n\
-out vec4 vert_color;\n\
-uniform mat4 mvpMat;\n\
-void main() {\n\
-	vert_color = in_Color;\n\
-	gl_Position = mvpMat * vec4(in_Position, 1.0);\n\
-}";
-	const char* Axis_fragShader =
-		"#version 330\n\
-in vec4 vert_color;\n\
-out vec4 out_Color;\n\
-void main() {\n\
-	out_Color = vert_color;\n\
-}";
 
 	void setupAxis() {
 		glGenVertexArrays(1, &AxisVao);
@@ -174,28 +143,19 @@ void main() {\n\
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
-		AxisShader[0] = compileShader(Axis_vertShader, GL_VERTEX_SHADER, "AxisVert");
-		AxisShader[1] = compileShader(Axis_fragShader, GL_FRAGMENT_SHADER, "AxisFrag");
+		axisShader = Shader(axisVS, axisFS);
 
-		AxisProgram = glCreateProgram();
-		glAttachShader(AxisProgram, AxisShader[0]);
-		glAttachShader(AxisProgram, AxisShader[1]);
-		glBindAttribLocation(AxisProgram, 0, "in_Position");
-		glBindAttribLocation(AxisProgram, 1, "in_Color");
-		linkProgram(AxisProgram);
 	}
 	void cleanupAxis() {
 		glDeleteBuffers(3, AxisVbo);
 		glDeleteVertexArrays(1, &AxisVao);
 
-		glDeleteProgram(AxisProgram);
-		glDeleteShader(AxisShader[0]);
-		glDeleteShader(AxisShader[1]);
+		axisShader.CleanUpShader();
 	}
-	void drawAxis() {
+	void draw() {
 		glBindVertexArray(AxisVao);
-		glUseProgram(AxisProgram);
-		glUniformMatrix4fv(glGetUniformLocation(AxisProgram, "mvpMat"), 1, GL_FALSE, glm::value_ptr(RV::_MVP));
+		axisShader.Use();
+		axisShader.SetMat4("mvpMat", 1, GL_FALSE, glm::value_ptr(RV::_MVP));
 		glDrawElements(GL_LINES, 6, GL_UNSIGNED_BYTE, 0);
 
 		glUseProgram(0);
@@ -206,14 +166,16 @@ void main() {\n\
 ////////////////////////////////////////////////// CUBE
 namespace Cube {
 	GLuint cubeVao;
-	GLuint cubeVbo[3];
-	GLuint cubeShaders[2];
-	GLuint cubeProgram;
+	GLuint cubeVbo[5];
+	GLuint textureID[6];
+	Shader cubeShader;
 	glm::mat4 objMat = glm::mat4(1.f);
-
+	unsigned char* data[6];
+	glm::vec3 position = glm::vec3(0, 3, 0), rotation = glm::vec3(0, 0, 0), scale = glm::vec3(4, 4, 4);
 	extern const float halfW = 0.5f;
-	int numVerts = 24 + 6; // 4 vertex/face * 6 faces + 6 PRIMITIVE RESTART
 
+	int texWidth, texHeight, nrChannels;
+	int numVerts = 24 + 6; // 4 vertex/face * 6 faces + 6 PRIMITIVE RESTART
 						   //   4---------7
 						   //  /|        /|
 						   // / |       / |
@@ -241,6 +203,13 @@ namespace Cube {
 		glm::vec3(0.f,  0.f,  1.f)
 	};
 
+	glm::vec2 texCoords[] = {
+		glm::vec2(0.f, 0.f), // Abajo izquierda
+		glm::vec2(0.f, 1.f), // Arriba izquierda
+		glm::vec2(1.f, 0.f), // Abajo derecha
+		glm::vec2(1.f, 1.f)  // Arriba derecha
+	};
+
 	glm::vec3 cubeVerts[] = {
 		verts[1], verts[0], verts[2], verts[3],
 		verts[5], verts[6], verts[4], verts[7],
@@ -248,6 +217,14 @@ namespace Cube {
 		verts[2], verts[3], verts[6], verts[7],
 		verts[0], verts[4], verts[3], verts[7],
 		verts[1], verts[2], verts[5], verts[6]
+	};
+	glm::vec2 cubeTexCoords[] = { // Les uvs que pertanyeixen a cada vertex
+		texCoords[1], texCoords[0], texCoords[3], texCoords[2],
+		texCoords[0], texCoords[2], texCoords[1], texCoords[3],
+		texCoords[2], texCoords[3], texCoords[0], texCoords[1],
+		texCoords[0], texCoords[2], texCoords[1], texCoords[3],
+		texCoords[2], texCoords[3], texCoords[0], texCoords[1],
+		texCoords[0], texCoords[2], texCoords[1], texCoords[3]
 	};
 	glm::vec3 cubeNorms[] = {
 		norms[0], norms[0], norms[0], norms[0],
@@ -257,6 +234,7 @@ namespace Cube {
 		norms[4], norms[4], norms[4], norms[4],
 		norms[5], norms[5], norms[5], norms[5]
 	};
+
 	GLubyte cubeIdx[] = {
 		0, 1, 2, 3, UCHAR_MAX,
 		4, 5, 6, 7, UCHAR_MAX,
@@ -266,32 +244,35 @@ namespace Cube {
 		20, 21, 22, 23, UCHAR_MAX
 	};
 
-	const char* cube_vertShader =
-		"#version 330\n\
-in vec3 in_Position;\n\
-in vec3 in_Normal;\n\
-out vec4 vert_Normal;\n\
-uniform mat4 objMat;\n\
-uniform mat4 mv_Mat;\n\
-uniform mat4 mvpMat;\n\
-void main() {\n\
-	gl_Position = mvpMat * objMat * vec4(in_Position, 1.0);\n\
-	vert_Normal = mv_Mat * objMat * vec4(in_Normal, 0.0);\n\
-}";
-	const char* cube_fragShader =
-		"#version 330\n\
-in vec4 vert_Normal;\n\
-out vec4 out_Color;\n\
-uniform mat4 mv_Mat;\n\
-uniform vec4 color;\n\
-uniform vec4 ambient;\n\
-void main() {\n\
-	out_Color = color*ambient;\n\
-}";
 	void setupCube() {
 		glGenVertexArrays(1, &cubeVao);
 		glBindVertexArray(cubeVao);
-		glGenBuffers(3, cubeVbo);
+
+		for (int i = 0; i < 6; i++)
+		{
+			data[i] = stbi_load(cubeTexture[i], &texWidth, &texHeight, &nrChannels, 0);
+			glGenTextures(1, &textureID[i]); //TEXTURES
+			glBindTexture(GL_TEXTURE_2D, textureID[i]); //TEXTURES
+
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+			if (data[i]) glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, texWidth, texHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, data[i]); //TEXTURES
+			else std::cout << "Failed to load texture" << std::endl;
+
+			stbi_image_free(data[i]);
+		}
+		// Array que determina quina textura s'aplica a cada vertex
+		int cubeTextures[] = { 
+		textureID[0],textureID[0],textureID[0],textureID[0],
+		textureID[1],textureID[1],textureID[1],textureID[1],
+		textureID[2],textureID[2],textureID[2],textureID[2],
+		textureID[3],textureID[3],textureID[3],textureID[3],
+		textureID[4],textureID[4],textureID[4],textureID[4],
+		textureID[5],textureID[5],textureID[5],textureID[5]
+		};
+
+		glGenBuffers(5, cubeVbo);
 
 		glBindBuffer(GL_ARRAY_BUFFER, cubeVbo[0]);
 		glBufferData(GL_ARRAY_BUFFER, sizeof(cubeVerts), cubeVerts, GL_STATIC_DRAW);
@@ -303,73 +284,61 @@ void main() {\n\
 		glVertexAttribPointer((GLuint)1, 3, GL_FLOAT, GL_FALSE, 0, 0);
 		glEnableVertexAttribArray(1);
 
+		glBindBuffer(GL_ARRAY_BUFFER, cubeVbo[2]);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(cubeTexCoords), cubeTexCoords, GL_STATIC_DRAW);
+		glVertexAttribPointer((GLuint)2, 2, GL_FLOAT, GL_FALSE, 0, 0);
+		glEnableVertexAttribArray(2);
+
+		glBindBuffer(GL_ARRAY_BUFFER, cubeVbo[3]);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(cubeTextures), cubeTextures, GL_STATIC_DRAW);
+		glVertexAttribPointer((GLuint)3, 1, GL_FLOAT, GL_FALSE, 0, 0);
+		glEnableVertexAttribArray(3);
+
 		glPrimitiveRestartIndex(UCHAR_MAX);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cubeVbo[2]);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cubeVbo[4]);
 		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(cubeIdx), cubeIdx, GL_STATIC_DRAW);
 
 		glBindVertexArray(0);
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
-		cubeShaders[0] = compileShader(cube_vertShader, GL_VERTEX_SHADER, "cubeVert");
-		cubeShaders[1] = compileShader(cube_fragShader, GL_FRAGMENT_SHADER, "cubeFrag");
-
-		cubeProgram = glCreateProgram();
-		glAttachShader(cubeProgram, cubeShaders[0]);
-		glAttachShader(cubeProgram, cubeShaders[1]);
-		glBindAttribLocation(cubeProgram, 0, "in_Position");
-		glBindAttribLocation(cubeProgram, 1, "in_Normal");
-		linkProgram(cubeProgram);
+		cubeShader = Shader(cubeVS, cubeFS);
 	}
+
 	void cleanupCube() {
-		glDeleteBuffers(3, cubeVbo);
+		glDeleteBuffers(5, cubeVbo);
 		glDeleteVertexArrays(1, &cubeVao);
+		cubeShader.CleanUpShader();
+		for (int i = 0; i < 6; i++) glDeleteTextures(1, &textureID[i]);
+	}
 
-		glDeleteProgram(cubeProgram);
-		glDeleteShader(cubeShaders[0]);
-		glDeleteShader(cubeShaders[1]);
+	void updateCube()
+	{
+		glm::mat4 t = glm::translate(glm::mat4(), position);
+		glm::mat4 r1 = glm::rotate(glm::mat4(), rotation.x, glm::vec3(1, 0, 0));
+		glm::mat4 r2 = glm::rotate(glm::mat4(), rotation.y + (ImGui::GetTime() * 0.5f), glm::vec3(0, 1, 0));
+		glm::mat4 r3 = glm::rotate(glm::mat4(), rotation.z, glm::vec3(0, 0, 1));
+		glm::mat4 s = glm::scale(glm::mat4(), scale);
+		objMat = t * r1 * r2 * r3 * s;
 	}
-	void updateCube(const glm::mat4& transform) {
-		objMat = transform;
-	}
-	void drawCube() {
+
+	void draw() {
+		cubeShader.Use();
 		glEnable(GL_PRIMITIVE_RESTART);
-		glBindVertexArray(cubeVao);
-		glUseProgram(cubeProgram);
-		glUniformMatrix4fv(glGetUniformLocation(cubeProgram, "objMat"), 1, GL_FALSE, glm::value_ptr(objMat));
-		glUniformMatrix4fv(glGetUniformLocation(cubeProgram, "mv_Mat"), 1, GL_FALSE, glm::value_ptr(RenderVars::_modelView));
-		glUniformMatrix4fv(glGetUniformLocation(cubeProgram, "mvpMat"), 1, GL_FALSE, glm::value_ptr(RenderVars::_MVP));
-		glUniform4f(glGetUniformLocation(cubeProgram, "color"), 0.1f, 1.f, 1.f, 0.f);
-		glDrawElements(GL_TRIANGLE_STRIP, numVerts, GL_UNSIGNED_BYTE, 0);
-
-		glUseProgram(0);
-		glBindVertexArray(0);
-		glDisable(GL_PRIMITIVE_RESTART);
-	}
-
-	void drawTwoCubes() {
-		float time = ImGui::GetTime();
-		glEnable(GL_PRIMITIVE_RESTART);
-		glm::mat4 t = glm::translate(glm::mat4(), glm::vec3(-1.0f, 2.0f, 3.0f));
-		objMat = t;
 
 		glBindVertexArray(cubeVao);
-		glUseProgram(cubeProgram);
-		glUniformMatrix4fv(glGetUniformLocation(cubeProgram, "mv_Mat"), 1, GL_FALSE, glm::value_ptr(RenderVars::_modelView));
-		glUniformMatrix4fv(glGetUniformLocation(cubeProgram, "mvpMat"), 1, GL_FALSE, glm::value_ptr(RenderVars::_MVP));
 
-		glUniformMatrix4fv(glGetUniformLocation(cubeProgram, "objMat"), 1, GL_FALSE, glm::value_ptr(objMat));
-		glUniform4f(glGetUniformLocation(cubeProgram, "color"), 0.1f, 1.f, 1.f, 0.f);
-		glUniform4f(glGetUniformLocation(cubeProgram, "ambient"), 0.5f, 0.5f, 0.5f, 0.5f);
+		cubeShader.SetMat4("objMat", 1, GL_FALSE, glm::value_ptr(objMat));
+		cubeShader.SetMat4("mv_Mat", 1, GL_FALSE, glm::value_ptr(RV::_modelView));
+		cubeShader.SetMat4("mvpMat", 1, GL_FALSE, glm::value_ptr(RV::_MVP));
+		cubeShader.SetFloat3("color", glm::vec3(1, 1, 1));
+		for (int i = 0; i < 6; i++)
+		{
+			cubeShader.SetInt("text" + std::to_string(i), i); // Setejem la unitat de textura
+			glActiveTexture(GL_TEXTURE0 + i);
+			glBindTexture(GL_TEXTURE_2D, textureID[i]);
+		}
 		glDrawElements(GL_TRIANGLE_STRIP, numVerts, GL_UNSIGNED_BYTE, 0);
-
-		t = glm::translate(glm::mat4(), glm::vec3(1.f, (sin(time) * 0.5f) + 0.5f, 3.0f));
-		objMat = t;
-		glUniformMatrix4fv(glGetUniformLocation(cubeProgram, "objMat"), 1, GL_FALSE, glm::value_ptr(objMat));
-		glUniform4f(glGetUniformLocation(cubeProgram, "color"), (sin(time) * 0.5f) + 0.5f, 0.f, 0.f, 0.f);
-		glUniform4f(glGetUniformLocation(cubeProgram, "ambient"), 0.5f, 0.5f, 0.5f, 0.5f);
-		glDrawElements(GL_TRIANGLE_STRIP, numVerts, GL_UNSIGNED_BYTE, 0);
-
 
 		glUseProgram(0);
 		glBindVertexArray(0);
@@ -378,101 +347,52 @@ void main() {\n\
 	}
 }
 
-/////////////////////////////////////////////////
-GLuint program;
-GLuint VAO;
-GLuint VBO;
-
-// A vertex shader that assigns a static position to the vertex
-static const GLchar* vertex_shader_source[] = {
-	"#version 330\n"
-	"layout (location = 0) in vec3 aPos;"
-	"\n"
-	"void main(){\n"
-		"gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);"  // fix w = 1.0
-	"}"
-};
-
-// A fragment shader that assigns a static color
-static const GLchar* fragment_shader_source[] = {
-	"#version 330\n"
-	"\n"
-	"out vec4 color;\n"
-	"void main(){\n"
-		"color = vec4(0.0, 0.8, 1.0, 1.0);\n"
-	"}"
-};
-
-float vertices[] = {
-		-0.5f, -0.5f, 0.0f,
-		 0.5f, -0.5f, 0.0f,
-		 0.0f,  0.5f, 0.0f
-};
-
-
 void GLinit(int width, int height) {
+	srand(static_cast<unsigned>(time(nullptr)));
+	stbi_set_flip_vertically_on_load(true);
+
 	glViewport(0, 0, width, height);
 	glClearColor(0.2f, 0.2f, 0.2f, 1.f);
 	glClearDepth(1.f);
 	glDepthFunc(GL_LEQUAL);
 	glEnable(GL_DEPTH_TEST);
-	//glEnable(GL_CULL_FACE);
+	glEnable(GL_CULL_FACE);
 
 	RV::_projection = glm::perspective(RV::FOV, (float)width / (float)height, RV::zNear, RV::zFar);
 
 	// Setup shaders & geometry
+	light.type = Light::EType::DIRECTIONAL; //--> Inicialitzem el primer tipus d'iluminacó a direccional
 	Axis::setupAxis();
 	Cube::setupCube();
 
+	// Crida al constructor de la classe amb els diferents objectes
+	Object Neko(catObj, glm::vec3(-3.11f, 1.6f, 2.71f), glm::vec3(0, 4.71f, 0), glm::vec3(1, 1, 1), glm::vec3(1, 1, 1), modelVS, modelFS, nullptr, catTexture);
+	Object explosionNeko(catObj, glm::vec3(0.0f, 6.0f, 3.8f), glm::vec3(0, 4.71f, 0), glm::vec3(0.5f, 0.5f, 0.5f), glm::vec3(1, 1, 1), explosionVS, explosionFS, explosionGS, catTexture);
 
-	/////////////////////////////////////////////////////TODO
-	// Compile the shaders
-	GLuint vertex_shader = compileShader(vertex_shader_source[0], GL_VERTEX_SHADER);
-	GLuint fragment_shader = compileShader(fragment_shader_source[0], GL_FRAGMENT_SHADER);
+	// Emmagatzema els objectes creats al vector
+	objects.push_back(Neko);
+	objects.push_back(explosionNeko);
 
-	// Create the program that contains the shaders
-	program = glCreateProgram();
-	glAttachShader(program, vertex_shader);
-	glAttachShader(program, fragment_shader);
-	linkProgram(program);
+	// Carreguem varies textures diferents per poder spawnejar billboards randomitzades
+	int texWidth[3], texHeight[3], nrChannels[3];
+	unsigned char* data[3];
+	data[0] = stbi_load(treeTexture1, &texWidth[0], &texHeight[0], &nrChannels[0], 0);
+	data[1] = stbi_load(treeTexture2, &texWidth[1], &texHeight[1], &nrChannels[1], 0);
+	data[2] = stbi_load(treeTexture3, &texWidth[2], &texHeight[2], &nrChannels[2], 0);
 
-	// The shaders will not be used anymore as they are now contained in the program
-	glDeleteShader(vertex_shader);
-	glDeleteShader(fragment_shader);
+	int random = 0;
 
-	// Create the vertex array object
-	// This object maintains the state related to the input of the OpenGL pipeline
-	glGenVertexArrays(1, &VAO);
-	glBindVertexArray(VAO);
+	// Creem i emmagatzemem billboards
+	for (int i = 0; i < NUM_BILLBOARDS; i++)
+	{
+		random = rand() % 3; // Tria una textura random per cada arbre
+		Billboard billboard(glm::vec3((rand() % 50) - 25, 0, (rand() % 50) - 25), data[random], texWidth[random], texHeight[random], bbVS, bbFS, bbGS);
+		billboards.push_back(billboard);
+	}
 
-	// Create the vertex buffer object
-		// It contains arbitrary data for the vertices. In our case, its coordinates.
-	glGenBuffers(1, &VBO);
+	for (int i = 0; i < 3; i++) stbi_image_free(data[i]); // Alliberem memoria
 
-	// From this point until we bind another buffer, calls related to the
-	// array buffer will use VBO.
-	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-
-	// For example, copy the data to the array buffer...
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-	// ...and specify the layout of the arbitrary data setting the attributes of the vertex buffer
-	glVertexAttribPointer(
-		0, // Set the location for this attribute to 0 (same that we specified in the shader)
-		3, // Size of the vertex attribute. In this case, 3 coordinates x, y, z
-		GL_FLOAT,
-		GL_FALSE, // Don't normalize the data.
-		3 * sizeof(float),  // stride (space between consecutive vertex attributes)
-		(void*)0 // offset of where the position data begins in the buffer (in this case 0)
-	);
-
-	// Once the attribute is specified, we enable it. The parameter is the location of the attribute
-	glEnableVertexAttribArray(0);
-
-	// Not necessary, but recomendable as it ensures that we will not use the VAO accidentally.
-	glBindVertexArray(0);
-
-	/////////////////////////////////////////////////////////
+	scene = Scene::PHONG; //--> Inicialitzem la primera escena a la de la iluminació Phong
 }
 
 void GLcleanup() {
@@ -481,57 +401,246 @@ void GLcleanup() {
 
 	/////////////////////////////////////////////////////TODO
 	// Do your cleanup code here
-	// ...
-	// ...
-	// ...
-	/////////////////////////////////////////////////////////
+
+	//Cleanup per cada objecte dins del vector
+	for (Object obj : objects) obj.CleanUp();
+	objects.clear(); //--> Allibera memòria del vector d'objectes
+
+	for (Billboard bb : billboards) bb.CleanUp();
+	billboards.clear(); //--> Allibera memòria del vector de billboardsç
+
 }
-
-
 
 void GLrender(float dt) {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	RV::_modelView = glm::mat4(1.f);
+
 	RV::_modelView = glm::translate(RV::_modelView, glm::vec3(RV::panv[0], RV::panv[1], RV::panv[2]));
 	RV::_modelView = glm::rotate(RV::_modelView, RV::rota[1], glm::vec3(1.f, 0.f, 0.f));
 	RV::_modelView = glm::rotate(RV::_modelView, RV::rota[0], glm::vec3(0.f, 1.f, 0.f));
-
 	RV::_MVP = RV::_projection * RV::_modelView;
+	Axis::draw();
 
-	Axis::drawAxis();
-	Cube::drawTwoCubes();
-	//float currentTime = ImGui::GetTime();
+	switch (scene)
+	{
+	case Scene::PHONG:
+		// S'actualitza i es dibuixa a cada objecte del vector
+		objects[0].Update();
+		objects[0].Draw(light);
+		break;
+	case Scene::TEXTURING:
+		// S'actualitza i es dibuixa un cub amb textures diferents per cada cara
+		Cube::updateCube();
+		Cube::draw();
+		break;
+	case Scene::GEOMETRY_SHADERS: //--> Dibuixem billboards i l'animació d'explosió dels triangles a partir del geometry shader d'un model importat
+		for (Billboard bb : billboards) bb.Draw(GSI::width, GSI::height);
 
-	//const GLfloat color[] = { (sin(currentTime) * 0.5f) + 0.5f,(cos(currentTime) * 0.5f) + 0.5f,0.0f,1.0f };
+		objects[1].Update();
 
-	//glClearBufferfv(GL_COLOR, 0, color);
-	//glUseProgram(program);
-	//glBindVertexArray(VAO);
-	//glDrawArrays(GL_TRIANGLES, 0, 3);
-
-
-	/////////////////////////////////////////////////////TODO
-	// Do your render code here
-
-	/////////////////////////////////////////////////////////
-
+		// Animació d'explosió d'un model amb el geometry shader partint del codi proposat en https://learnopengl.com/Advanced-OpenGL/Geometry-Shader //
+		objects[1].Draw(GSI::currentTime, GSI::auxTime, GSI::magnitude, GSI::explosionAnim, GSI::subDivide);
+		break;
+	default:
+		break;
+	}
 	ImGui::Render();
 }
 
-void GUI() {
+void GUI()
+{
 	bool show = true;
 	ImGui::Begin("Physics Parameters", &show, 0);
 
-	{
-		ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+	ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 
-		/////////////////////////////////////////////////////TODO
-		// Do your GUI code here....
-		// ...
-		// ...
-		// ...
-		/////////////////////////////////////////////////////////
+	/////////////////////////////////////////////////////TODO
+	// Do your GUI code here....
+
+	if (ImGui::Button("Phong Scene")) { scene = Scene::PHONG; } ImGui::SameLine();
+	if (ImGui::Button("Texturing Scene")) { scene = Scene::TEXTURING; } ImGui::SameLine();
+	if (ImGui::Button("Geometry Scene"))
+	{
+		scene = Scene::GEOMETRY_SHADERS;
+		GSI::explosionAnim = false;
+		GSI::auxTime = ImGui::GetTime() + PI * 0.5f;
+	}
+	switch (scene)
+	{
+	case Scene::PHONG:
+#pragma region Lights
+		ImGui::NewLine();
+		//Botons per canviar dels tipus d'il·luminació
+		if (ImGui::RadioButton("Directional light", (int*)&light.type, (int)Light::EType::DIRECTIONAL))
+		{
+			light.intensity = 1.f;
+			light.position = glm::vec3{ 0.f, 1.f, 0.f };
+			light.type = Light::EType::DIRECTIONAL;
+		}
+		ImGui::SameLine();
+		if (ImGui::RadioButton("Point light", (int*)&light.type, (int)Light::EType::POINTLIGHT))
+		{
+			light.intensity = 3.f;
+			light.position = glm::vec3{ -4.f, 6.7f, 2.2f };
+			light.type = Light::EType::POINTLIGHT;
+		}
+		ImGui::SameLine();
+		if (ImGui::RadioButton("Spot light", (int*)&light.type, (int)Light::EType::SPOTLIGHT))
+		{
+			light.type = Light::EType::SPOTLIGHT;
+			light.intensity = 3.f;
+			light.position = glm::vec3{ 0.f, 2.9f, 13.5f };
+			light.spotLightDirection = glm::vec3{ 0.f, 0.f, -1.f };
+			light.spotLightAngle = 21.85f;
+		}
+		if (ImGui::CollapsingHeader("Ilumination parameters"))
+		{
+			ImGui::Indent();
+			//Switch per canviar la informació de la interfaç segons el tipus d'il·luminació que s'esta fent servir
+			switch (light.type)
+			{
+			case Light::EType::DIRECTIONAL:
+				ImGui::DragFloat3("Light Direction", (float*)&light.position, 0.005f, -1.f, 1.f);
+				break;
+			case Light::EType::POINTLIGHT:
+				ImGui::DragFloat3("Pointlight Position", (float*)&light.position, 0.1f, -50.f, 50.f);
+				break;
+			case Light::EType::SPOTLIGHT:
+				ImGui::DragFloat3("Spotlight Position", (float*)&light.position, 0.1f, -50.f, 50.f);
+				ImGui::DragFloat3("Spotlight Direction", (float*)&light.spotLightDirection, 0.005f, -1.f, 1.f);
+				ImGui::DragFloat("Spotlight angle", &light.spotLightAngle, 0.05f, 10.f, 50.f);
+				light.cutOff = glm::cos(glm::radians(light.spotLightAngle));
+
+				s = (light.attenuationActivated == 1) ? "Deactivate attenuation" : "Activate attenuation";
+
+				if (ImGui::Button(s.c_str())) {
+					light.attenuationActivated *= -1;
+				}
+				break;
+			}
+			ImGui::Unindent();
+
+			ImGui::Indent();
+			if (ImGui::CollapsingHeader("Lighting"))
+			{
+				ImGui::Indent();
+				ImGui::ColorEdit3("Light color", (float*)&light.color); //--> Color de la llum
+				ImGui::DragFloat("Light intensity", (float*)&light.intensity, 0.01f, 0.f, 10.f); //--> Intensitat de la llum
+				ImGui::Unindent();
+			}
+			if (ImGui::CollapsingHeader("Ambient/Diffuse lighting"))
+			{
+				ImGui::Indent();
+				ImGui::ColorEdit3("Ambientcolor", (float*)&light.ambientColor); //--> Color de la llum ambient
+				ImGui::DragFloat("Ambient strength", &light.ambientIntensity, 0.005f, 0.f, 3.f); //--> Intensitat de la llum ambient
+				ImGui::DragFloat("Diffuse strength", &light.diffuseIntensity, 0.01f, 0.f, 10.f); //--> Intensitat de la llum difusa
+				ImGui::Unindent();
+			}
+			if (ImGui::CollapsingHeader("Specular lighting"))
+			{
+				ImGui::Indent();
+				ImGui::ColorEdit3("Specular color", (float*)&light.specularColor); //--> Color de la llum especular
+				ImGui::DragFloat("Specular strength", &light.specularIntensity, 0.01f, 0.f, 10.f); //--> Intensitat de la llum especular
+				ImGui::DragFloat("Shininess value ", &light.shininessValue, 0.5f, 1.f, 256.f); //--> Quantitat de la brillentor de la llum especular
+				ImGui::Unindent();
+			}
+
+			ImGui::Unindent();
+		}
+
+#pragma endregion
+
+#pragma region Objects
+
+		if (ImGui::CollapsingHeader("Objects"))
+		{
+			ImGui::Indent();
+			//Informació modificable de cada objecte
+			s = objects[0].GetName() + " Color";
+			ImGui::ColorEdit3(s.c_str(), (float*)&objects[0].objectColor);
+
+			s = objects[0].GetName() + " Position";
+			ImGui::DragFloat3(s.c_str(), (float*)&objects[0].position, 0.01f, -50.f, 50.f);
+
+			s = objects[0].GetName() + " Rotation";
+			ImGui::DragFloat3(s.c_str(), (float*)&objects[0].rotation, 0.01f, 0.f, 360.f);
+
+			s = objects[0].GetName() + " Scale";
+			ImGui::DragFloat3(s.c_str(), (float*)&objects[0].scale, 0.01f, 0.01f, 50.f);
+			ImGui::Unindent();
+		}
+		break;
+
+#pragma endregion
+
+	case Scene::TEXTURING:
+		ImGui::NewLine();
+		ImGui::Indent();
+		ImGui::DragFloat3("Cube Position", (float*)&Cube::position, 0.01f, -50.f, 50.f);
+		ImGui::DragFloat3("Cube Rotation", (float*)&Cube::rotation, 0.01f, 0.f, 360.f);
+		ImGui::DragFloat3("Cube Scale", (float*)&Cube::scale, 0.01f, 0.01f, 50.f);
+		ImGui::Unindent();
+		break;
+	case Scene::GEOMETRY_SHADERS:
+		ImGui::NewLine();
+#pragma region Explosion
+
+		if (ImGui::CollapsingHeader("Explosion Animation"))
+		{
+			ImGui::Indent();
+			GSI::explosionAnim ? s = "Stop Animation" : s = "Start Animation"; //--> Botó per començar i para l'animació d'explosió
+			if (ImGui::Button(s.c_str()))
+			{
+				GSI::explosionAnim = !GSI::explosionAnim;
+				GSI::auxTime = ImGui::GetTime() + PI * 0.5f;
+			}
+
+			ImGui::Checkbox("Subdivide triangles", &GSI::subDivide); //--> Activar o desactivar subdivisió dels triangles
+
+			if (!GSI::explosionAnim) ImGui::DragFloat("Time", &GSI::currentTime, 0.02f, 0.0f, 10.f);
+			ImGui::DragFloat("Magnitude", &GSI::magnitude, 0.05f, 0.0f, 50.f);
+			ImGui::Unindent();
+		}
+
+#pragma endregion
+
+#pragma region Billboard
+
+		// Variables de les billboards i animació d'explosió a modificar desde l'interfaç
+		if (ImGui::CollapsingHeader("Billboard parameters"))
+		{
+			ImGui::Indent();
+			ImGui::DragFloat("Tree height", &GSI::height, 0.05f, 0.1f, 50.f);
+			ImGui::DragFloat("Tree width", &GSI::width, 0.05f, 0.1f, 50.f);
+			ImGui::Unindent();
+		}
+
+		if (ImGui::CollapsingHeader("Objects"))
+		{
+			ImGui::Indent();
+			for (int i = 1; i < objects.size(); i++)
+			{
+				ImGui::PushID(i);
+
+				s = std::to_string(i + 1) + ": " + objects[i].GetName() + " Position";
+				ImGui::DragFloat3(s.c_str(), (float*)&objects[i].position, 0.01f, -50.f, 50.f);
+
+				s = std::to_string(i + 1) + ": " + objects[i].GetName() + " Rotation";
+				ImGui::DragFloat3(s.c_str(), (float*)&objects[i].rotation, 0.01f, 0.f, 360.f);
+
+				s = std::to_string(i + 1) + ": " + objects[i].GetName() + " Scale";
+				ImGui::DragFloat3(s.c_str(), (float*)&objects[i].scale, 0.01f, 0.01f, 50.f);
+
+				ImGui::PopID();
+			}
+			ImGui::Unindent();
+		}
+
+#pragma endregion
+		break;
+	default:
+		break;
 	}
 	// .........................
 
