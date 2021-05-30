@@ -7,23 +7,13 @@
 #include "Constants.h"
 
 // Declaració de la funció del loadCubemap
-extern GLuint loadCubemap(std::vector<std::string>);
+extern unsigned int loadCubemap(std::vector<std::string> faces);
 
 Light light;
 Scene scene;
 std::vector<Object> objects; //--> Vector que emmagatzema els objectes que s'instancien a l'escena.
 std::vector<Billboard> billboards; //--> Vector que emmagatzema les billboards que s'instancien a l'escena.
 std::string s; //--> String declarat global per no redeclarar-lo a cada frame. S'usa pels noms del ImGui.
-std::vector<std::string> faces
-{
-	"materials/right.png",
-	"materials/left.png",
-	"materials/top.png",
-	"materials/bottom.png",
-	"materials/front.png",
-	"materials/back.png"
-};
-GLuint cubemapTexture = loadCubemap(faces);
 
 namespace RenderVars {
 	float FOV = glm::radians(90.f);
@@ -361,10 +351,8 @@ namespace Cube {
 }
 
 namespace CubeMap {
-	GLuint skyboxVAO, skyboxVBO;
+	unsigned int skyboxVAO, skyboxVBO;
 	Shader cubeMapShader;
-
-	glm::mat4 objMat = glm::mat4(1.f);
 
 	float skyboxVertices[] = {
 		// positions          
@@ -411,8 +399,20 @@ namespace CubeMap {
 		 1.0f, -1.0f,  1.0f
 	};
 	
+	std::vector<std::string> faces
+	{
+		"materials/right.jpg",
+		"materials/left.jpg",
+		"materials/top.jpg",
+		"materials/bottom.jpg",
+		"materials/front.jpg",
+		"materials/back.jpg"
+	};
+	unsigned int cubemapTexture;
+
 	void SetUp()
 	{
+		cubemapTexture = loadCubemap(faces);
 		glGenVertexArrays(1, &skyboxVAO);
 		glGenBuffers(1, &skyboxVBO);
 		glBindVertexArray(skyboxVAO);
@@ -422,6 +422,11 @@ namespace CubeMap {
 		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 
 		cubeMapShader = Shader(skyBoxVs, skyBoxFs);
+
+		cubeMapShader.Use();
+		cubeMapShader.SetInt("skybox", 0);
+
+		//glBindAttribLocation(cubeMapShader.GetID(), 0, "aPos");
 	}
 
 	void cleanup() {
@@ -432,31 +437,29 @@ namespace CubeMap {
 	}
 
 	void draw() {
-		glDepthMask(GL_FALSE);
+		glDepthFunc(GL_LEQUAL);
 		cubeMapShader.Use();
-		glEnable(GL_PRIMITIVE_RESTART);
-
-		cubeMapShader.SetMat4("objMat", 1, GL_FALSE, glm::value_ptr(objMat));
-		cubeMapShader.SetMat4("mv_Mat", 1, GL_FALSE, glm::value_ptr(RV::_modelView));
-		cubeMapShader.SetMat4("mvpMat", 1, GL_FALSE, glm::value_ptr(RV::_MVP));
 		
+		glm::mat4 view = glm::mat4(glm::mat3(RV::_inv_modelview));
+
+		cubeMapShader.SetMat4("view", 1, GL_FALSE, glm::value_ptr(RV::_inv_modelview));
+		cubeMapShader.SetMat4("projection", 1, GL_FALSE, glm::value_ptr(RV::_projection));
+
 		glBindVertexArray(skyboxVAO);
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 
-		glDepthMask(GL_TRUE);
-
-		glUseProgram(0);
 		glBindVertexArray(0);
+		//glUseProgram(0);
 
-		glDisable(GL_PRIMITIVE_RESTART);
+		glDepthFunc(GL_LESS);
 	}
 }
 
 void GLinit(int width, int height) {
 	srand(static_cast<unsigned>(time(nullptr)));
-	stbi_set_flip_vertically_on_load(true);
+	//stbi_set_flip_vertically_on_load(true);
 
 	glViewport(0, 0, width, height);
 	glClearColor(0.2f, 0.2f, 0.2f, 1.f);
@@ -474,10 +477,10 @@ void GLinit(int width, int height) {
 	CubeMap::SetUp();
 
 	// Crida al constructor de la classe amb els diferents objectes
-	Object camaro(carObj, glm::vec3(-3.11f, 1.6f, 2.71f), glm::vec3(0, 4.71f, 0), glm::vec3(0.05f, 0.05f, 0.05f), glm::vec3(0.1f, 0.1f, 0.1f), modelVS, modelFS, nullptr, carTexture);
+	//Object camaro(carObj, glm::vec3(-3.11f, 1.6f, 2.71f), glm::vec3(0, 4.71f, 0), glm::vec3(0.05f, 0.05f, 0.05f), glm::vec3(0.1f, 0.1f, 0.1f), modelVS, modelFS, nullptr, nullptr);
 
 	// Emmagatzema els objectes creats al vector
-	objects.push_back(camaro);
+	//objects.push_back(camaro);
 
 	// Carreguem varies textures diferents per poder spawnejar billboards randomitzades
 
@@ -516,10 +519,9 @@ void GLrender(float dt) {
 	RV::_modelView = glm::rotate(RV::_modelView, RV::rota[0], glm::vec3(0.f, 1.f, 0.f));
 	RV::_MVP = RV::_projection * RV::_modelView;
 	Axis::draw();
+	CubeMap::draw();
 
 	for (Object obj : objects) { obj.Update(); obj.Draw(light); }
-
-	CubeMap::draw();
 
 	ImGui::Render();
 }

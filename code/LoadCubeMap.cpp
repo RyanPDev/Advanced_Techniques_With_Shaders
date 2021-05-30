@@ -1,6 +1,6 @@
 #include "Utils.h"
 
-GLuint loadCubemap(std::vector<std::string> faces)
+unsigned int loadCubemap(std::vector<std::string> faces)
 {
     unsigned int textureID;
     glGenTextures(1, &textureID);
@@ -12,14 +12,12 @@ GLuint loadCubemap(std::vector<std::string> faces)
         unsigned char* data = stbi_load(faces[i].c_str(), &width, &height, &nrChannels, 0);
         if (data)
         {
-            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
-                0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data
-            );
+            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
             stbi_image_free(data);
         }
         else
         {
-            std::cout << "Cubemap tex failed to load at path: " << faces[i] << std::endl;
+            std::cout << "Cubemap texture failed to load at path: " << faces[i] << std::endl;
             stbi_image_free(data);
         }
     }
