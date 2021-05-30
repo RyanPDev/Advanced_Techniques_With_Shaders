@@ -6,11 +6,24 @@
 #include "Billboard.h"
 #include "Constants.h"
 
+// Declaració de la funció del loadCubemap
+extern GLuint loadCubemap(std::vector<std::string>);
+
 Light light;
 Scene scene;
 std::vector<Object> objects; //--> Vector que emmagatzema els objectes que s'instancien a l'escena.
 std::vector<Billboard> billboards; //--> Vector que emmagatzema les billboards que s'instancien a l'escena.
 std::string s; //--> String declarat global per no redeclarar-lo a cada frame. S'usa pels noms del ImGui.
+std::vector<std::string> faces
+{
+	"materials/right.png",
+	"materials/left.png",
+	"materials/top.png",
+	"materials/bottom.png",
+	"materials/front.png",
+	"materials/back.png"
+};
+GLuint cubemapTexture = loadCubemap(faces);
 
 namespace RenderVars {
 	float FOV = glm::radians(90.f);
@@ -347,6 +360,100 @@ namespace Cube {
 	}
 }
 
+namespace CubeMap {
+	GLuint skyboxVAO, skyboxVBO;
+	Shader cubeMapShader;
+
+	glm::mat4 objMat = glm::mat4(1.f);
+
+	float skyboxVertices[] = {
+		// positions          
+		-1.0f,  1.0f, -1.0f,
+		-1.0f, -1.0f, -1.0f,
+		 1.0f, -1.0f, -1.0f,
+		 1.0f, -1.0f, -1.0f,
+		 1.0f,  1.0f, -1.0f,
+		-1.0f,  1.0f, -1.0f,
+
+		-1.0f, -1.0f,  1.0f,
+		-1.0f, -1.0f, -1.0f,
+		-1.0f,  1.0f, -1.0f,
+		-1.0f,  1.0f, -1.0f,
+		-1.0f,  1.0f,  1.0f,
+		-1.0f, -1.0f,  1.0f,
+
+		 1.0f, -1.0f, -1.0f,
+		 1.0f, -1.0f,  1.0f,
+		 1.0f,  1.0f,  1.0f,
+		 1.0f,  1.0f,  1.0f,
+		 1.0f,  1.0f, -1.0f,
+		 1.0f, -1.0f, -1.0f,
+
+		-1.0f, -1.0f,  1.0f,
+		-1.0f,  1.0f,  1.0f,
+		 1.0f,  1.0f,  1.0f,
+		 1.0f,  1.0f,  1.0f,
+		 1.0f, -1.0f,  1.0f,
+		-1.0f, -1.0f,  1.0f,
+
+		-1.0f,  1.0f, -1.0f,
+		 1.0f,  1.0f, -1.0f,
+		 1.0f,  1.0f,  1.0f,
+		 1.0f,  1.0f,  1.0f,
+		-1.0f,  1.0f,  1.0f,
+		-1.0f,  1.0f, -1.0f,
+
+		-1.0f, -1.0f, -1.0f,
+		-1.0f, -1.0f,  1.0f,
+		 1.0f, -1.0f, -1.0f,
+		 1.0f, -1.0f, -1.0f,
+		-1.0f, -1.0f,  1.0f,
+		 1.0f, -1.0f,  1.0f
+	};
+	
+	void SetUp()
+	{
+		glGenVertexArrays(1, &skyboxVAO);
+		glGenBuffers(1, &skyboxVBO);
+		glBindVertexArray(skyboxVAO);
+		glBindBuffer(GL_ARRAY_BUFFER, skyboxVBO);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(skyboxVertices), &skyboxVertices, GL_STATIC_DRAW);
+		glEnableVertexAttribArray(0);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+
+		cubeMapShader = Shader(skyBoxVs, skyBoxFs);
+	}
+
+	void cleanup() {
+		glDeleteBuffers(1, &skyboxVBO);
+		glDeleteVertexArrays(1, &skyboxVAO);
+		cubeMapShader.CleanUpShader();
+		glDeleteTextures(1, &cubemapTexture);
+	}
+
+	void draw() {
+		glDepthMask(GL_FALSE);
+		cubeMapShader.Use();
+		glEnable(GL_PRIMITIVE_RESTART);
+
+		cubeMapShader.SetMat4("objMat", 1, GL_FALSE, glm::value_ptr(objMat));
+		cubeMapShader.SetMat4("mv_Mat", 1, GL_FALSE, glm::value_ptr(RV::_modelView));
+		cubeMapShader.SetMat4("mvpMat", 1, GL_FALSE, glm::value_ptr(RV::_MVP));
+		
+		glBindVertexArray(skyboxVAO);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+
+		glDepthMask(GL_TRUE);
+
+		glUseProgram(0);
+		glBindVertexArray(0);
+
+		glDisable(GL_PRIMITIVE_RESTART);
+	}
+}
+
 void GLinit(int width, int height) {
 	srand(static_cast<unsigned>(time(nullptr)));
 	stbi_set_flip_vertically_on_load(true);
@@ -363,7 +470,8 @@ void GLinit(int width, int height) {
 	// Setup shaders & geometry
 	light.type = Light::EType::DIRECTIONAL; //--> Inicialitzem el primer tipus d'iluminacó a direccional
 	Axis::setupAxis();
-	Cube::setupCube();
+	//Cube::setupCube();
+	CubeMap::SetUp();
 
 	// Crida al constructor de la classe amb els diferents objectes
 	Object camaro(carObj, glm::vec3(-3.11f, 1.6f, 2.71f), glm::vec3(0, 4.71f, 0), glm::vec3(0.05f, 0.05f, 0.05f), glm::vec3(0.1f, 0.1f, 0.1f), modelVS, modelFS, nullptr, carTexture);
@@ -384,7 +492,8 @@ void GLinit(int width, int height) {
 
 void GLcleanup() {
 	Axis::cleanupAxis();
-	Cube::cleanupCube();
+	//Cube::cleanupCube();
+	CubeMap::cleanup();
 
 	/////////////////////////////////////////////////////TODO
 	// Do your cleanup code here
@@ -409,6 +518,8 @@ void GLrender(float dt) {
 	Axis::draw();
 
 	for (Object obj : objects) { obj.Update(); obj.Draw(light); }
+
+	CubeMap::draw();
 
 	ImGui::Render();
 }

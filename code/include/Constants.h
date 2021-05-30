@@ -64,4 +64,8 @@ const char* explosionVS = "shaders/explosion/exshader.vs";
 const char* explosionFS = "shaders/explosion/exshader.fs";
 const char* explosionGS = "shaders/explosion/exshader.gs";
 
+// Skybox
+const char* skyBoxVs = "shaders/skybox/skyBoxShader.vs";
+const char* skyBoxFs = "shaders/skybox/skyBoxShader.fs";
+
 #pragma endregion
