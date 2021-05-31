@@ -8,8 +8,9 @@ Object::Object(const char* _objPath, glm::vec3 _startPos, glm::vec3 _startRot, g
 	name(_objPath), position(_startPos), rotation(_startRot), scale(_startScale), objectColor(_startColor), initPos(_startPos), initRot(_startRot), initScale(_startScale)
 {
 	bool res = loadOBJ(_objPath, vertices, uvs, normals);
+	
 	//--> Carreguem textura
-	texturePath == nullptr ? data = false : data = stbi_load(texturePath, &texWidth, &texHeight, &nrChannels, 0);
+	texturePath == nullptr ? data = false : data = stbi_load(texturePath, &texWidth, &texHeight, &nrChannels, 4);
 
 	numVertices = vertices.size();
 
@@ -24,7 +25,7 @@ Object::Object(const char* _objPath, glm::vec3 _startPos, glm::vec3 _startRot, g
 
 	if (data)
 	{
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, texWidth, texHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, data); //TEXTURES
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texWidth, texHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, data); //TEXTURES
 		glGenerateMipmap(GL_TEXTURE_2D);
 	}
 	else std::cout << "Failed to load texture" << std::endl;

@@ -17,8 +17,7 @@ const char* carObj = "obj/camaro.obj";
 #pragma region Texture Paths
 
 //Car
-const char* carTexture = "materials/cat_texture.jpg";
-
+const char* carTexture = "materials/Camaro_AlbedoTransparency_alt.png";
 
 // Cube
 const char* cubeTextureC = "materials/checker_box.jpg";
@@ -35,7 +34,7 @@ const char* treeTexture1 = "materials/tree_texture.png";
 const char* treeTexture2 = "materials/tree_texture2.png";
 const char* treeTexture3 = "materials/tree_texture3.png";
 
-// Model
+// Models
 const char* catTexture = "materials/cat_texture.jpg";
 
 #pragma endregion

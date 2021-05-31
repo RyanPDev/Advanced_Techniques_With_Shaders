@@ -398,7 +398,7 @@ namespace CubeMap {
 		-1.0f, -1.0f,  1.0f,
 		 1.0f, -1.0f,  1.0f
 	};
-	
+
 	std::vector<std::string> faces
 	{
 		"materials/right.jpg",
@@ -423,8 +423,8 @@ namespace CubeMap {
 
 		cubeMapShader = Shader(skyBoxVs, skyBoxFs);
 
-		cubeMapShader.Use();
-		cubeMapShader.SetInt("skybox", 0);
+		/*cubeMapShader.Use();
+		cubeMapShader.SetInt("skybox", 0);*/
 
 		//glBindAttribLocation(cubeMapShader.GetID(), 0, "aPos");
 	}
@@ -439,10 +439,8 @@ namespace CubeMap {
 	void draw() {
 		glDepthFunc(GL_LEQUAL);
 		cubeMapShader.Use();
-		
-		glm::mat4 view = glm::mat4(glm::mat3(RV::_inv_modelview));
 
-		cubeMapShader.SetMat4("view", 1, GL_FALSE, glm::value_ptr(RV::_inv_modelview));
+		cubeMapShader.SetMat4("view", 1, GL_FALSE, glm::value_ptr(RV::_modelView));
 		cubeMapShader.SetMat4("projection", 1, GL_FALSE, glm::value_ptr(RV::_projection));
 
 		glBindVertexArray(skyboxVAO);
@@ -459,7 +457,7 @@ namespace CubeMap {
 
 void GLinit(int width, int height) {
 	srand(static_cast<unsigned>(time(nullptr)));
-	//stbi_set_flip_vertically_on_load(true);
+	stbi_set_flip_vertically_on_load(true);
 
 	glViewport(0, 0, width, height);
 	glClearColor(0.2f, 0.2f, 0.2f, 1.f);
@@ -477,10 +475,11 @@ void GLinit(int width, int height) {
 	CubeMap::SetUp();
 
 	// Crida al constructor de la classe amb els diferents objectes
-	//Object camaro(carObj, glm::vec3(-3.11f, 1.6f, 2.71f), glm::vec3(0, 4.71f, 0), glm::vec3(0.05f, 0.05f, 0.05f), glm::vec3(0.1f, 0.1f, 0.1f), modelVS, modelFS, nullptr, nullptr);
+	Object camaro(carObj, glm::vec3(-3.11f, 1.6f, 2.71f), glm::vec3(0, 4.71f, 0), glm::vec3(0.05f, 0.05f, 0.05f),
+		glm::vec3(0.1f, 0.1f, 0.1f), modelVS, modelFS, nullptr, carTexture);
 
 	// Emmagatzema els objectes creats al vector
-	//objects.push_back(camaro);
+	objects.push_back(camaro);
 
 	// Carreguem varies textures diferents per poder spawnejar billboards randomitzades
 
