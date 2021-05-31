@@ -5,6 +5,7 @@
 #include "Object.h"
 #include "Billboard.h"
 #include "Constants.h"
+#include "Texture.h"
 
 // Declaració de la funció del loadCubemap
 extern unsigned int loadCubemap(std::vector<std::string> faces);
@@ -422,11 +423,6 @@ namespace CubeMap {
 		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 
 		cubeMapShader = Shader(skyBoxVs, skyBoxFs);
-
-		/*cubeMapShader.Use();
-		cubeMapShader.SetInt("skybox", 0);*/
-
-		//glBindAttribLocation(cubeMapShader.GetID(), 0, "aPos");
 	}
 
 	void cleanup() {
@@ -472,12 +468,18 @@ void GLinit(int width, int height) {
 	// Setup shaders & geometry
 	light.type = Light::EType::DIRECTIONAL; //--> Inicialitzem el primer tipus d'iluminacó a direccional
 	Axis::setupAxis();
-	//Cube::setupCube();
 	CubeMap::SetUp();
 
+	// Carguem i generem les textures
+	Texture camaroTexture(Texture::ETYPE::OBJ, carTexture);
+
+	Texture treeText01(Texture::ETYPE::BB, treeTexture1);
+	Texture treeText02(Texture::ETYPE::BB, treeTexture2);
+	Texture treeText03(Texture::ETYPE::BB, treeTexture3);
+
 	// Crida al constructor de la classe amb els diferents objectes
-	Object camaro(carObj, glm::vec3(-3.11f, 1.6f, 2.71f), glm::vec3(0, 4.71f, 0), glm::vec3(0.05f, 0.05f, 0.05f),
-		glm::vec3(0.1f, 0.1f, 0.1f), modelVS, modelFS, nullptr, carTexture);
+	Object camaro(carObj, camaroTexture.GetID(), glm::vec3(-3.11f, 1.6f, 2.71f), glm::vec3(0, 4.71f, 0), glm::vec3(0.05f, 0.05f, 0.05f),
+		glm::vec3(0.1f, 0.1f, 0.1f), modelVS, modelFS, nullptr);
 
 	// Emmagatzema els objectes creats al vector
 	objects.push_back(camaro);
@@ -495,7 +497,6 @@ void GLinit(int width, int height) {
 
 void GLcleanup() {
 	Axis::cleanupAxis();
-	//Cube::cleanupCube();
 	CubeMap::cleanup();
 
 	/////////////////////////////////////////////////////TODO

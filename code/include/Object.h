@@ -7,13 +7,13 @@ class Object
 {
 private:
 	GLuint ObjVao;
-	GLuint textureID;
+	unsigned int textureID;
 	GLuint ObjVbo[3];
-
+	
 	glm::mat4 objMat;
 
-	int texWidth, texHeight, nrChannels;
-	unsigned char* data;
+	//int texWidth, texHeight, nrChannels;
+	//unsigned char* data;
 	std::string name;
 	glm::vec3 initPos, initRot, initScale;
 
@@ -26,7 +26,7 @@ private:
 	Shader shader;
 
 public:
-	Object(const char*, glm::vec3, glm::vec3, glm::vec3, glm::vec3, const char*, const char*, const char* = nullptr, const char* = nullptr);
+	Object(const char*, unsigned int, glm::vec3, glm::vec3, glm::vec3, glm::vec3, const char*, const char*, const char* = nullptr);
 
 	glm::vec3 objectColor;
 	glm::vec3 position, rotation, scale;

@@ -1,16 +1,16 @@
 #include "Object.h"
 
 // Declaració de la funció del load_obj.cpp que serveix per cargar els vertexs, uvs i normals dels models que importem
-extern bool loadOBJ(const char* path, std::vector < glm::vec3 >& out_vertices, std::vector < glm::vec2 >& out_uvs, std::vector < glm::vec3 >& out_normals);
+extern bool loadOBJ(const char* path, std::vector < glm::vec3 >& out_vertices, std::vector < glm::vec2 >& out_uvs, std::vector < glm::vec3 >& out_normals);    
 
-Object::Object(const char* _objPath, glm::vec3 _startPos, glm::vec3 _startRot, glm::vec3 _startScale, glm::vec3 _startColor,
-	const char* vertexPath, const char* fragmentPath, const char* geometryPath, const char* texturePath) :
-	name(_objPath), position(_startPos), rotation(_startRot), scale(_startScale), objectColor(_startColor), initPos(_startPos), initRot(_startRot), initScale(_startScale)
+Object::Object(const char* _objPath, unsigned int texId, glm::vec3 _startPos, glm::vec3 _startRot, glm::vec3 _startScale, glm::vec3 _startColor,
+	const char* vertexPath, const char* fragmentPath, const char* geometryPath) : textureID(texId),	name(_objPath), position(_startPos),
+	rotation(_startRot), scale(_startScale), objectColor(_startColor), initPos(_startPos), initRot(_startRot), initScale(_startScale)
 {
 	bool res = loadOBJ(_objPath, vertices, uvs, normals);
 	
 	//--> Carreguem textura
-	texturePath == nullptr ? data = false : data = stbi_load(texturePath, &texWidth, &texHeight, &nrChannels, 4);
+	//texturePath == nullptr ? data = false : data = stbi_load(texturePath, &texWidth, &texHeight, &nrChannels, 4);
 
 	numVertices = vertices.size();
 
@@ -20,17 +20,17 @@ Object::Object(const char* _objPath, glm::vec3 _startPos, glm::vec3 _startRot, g
 
 	glGenVertexArrays(1, &ObjVao);
 	glBindVertexArray(ObjVao);
-	glGenTextures(1, &textureID); //TEXTURES
-	glBindTexture(GL_TEXTURE_2D, textureID); //TEXTURES
+	//glGenTextures(1, &textureID); //TEXTURES
+	//glBindTexture(GL_TEXTURE_2D, textureID); //TEXTURES
 
-	if (data)
-	{
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texWidth, texHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, data); //TEXTURES
-		glGenerateMipmap(GL_TEXTURE_2D);
-	}
-	else std::cout << "Failed to load texture" << std::endl;
+	//if (data)
+	//{
+	//	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texWidth, texHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, data); //TEXTURES
+	//	glGenerateMipmap(GL_TEXTURE_2D);
+	//}
+	//else std::cout << "Failed to load texture" << std::endl;
 
-	stbi_image_free(data); //--> Alliberem memòria de les textures
+	//stbi_image_free(data); //--> Alliberem memòria de les textures
 
 	glGenBuffers(3, ObjVbo);
 

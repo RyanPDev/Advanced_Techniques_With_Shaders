@@ -1,22 +1,18 @@
 #include "Billboard.h"
 
-Billboard::Billboard(glm::vec3 _vertexPos, unsigned char* _data, int width, int height, const char* vertexPath, const char* fragmentPath, const char* geometryPath)
-	: vertexPos(_vertexPos)
+Billboard::Billboard(glm::vec3 _vertexPos, unsigned int texId, int width, int height, const char* vertexPath, const char* fragmentPath, const char* geometryPath)
+	: vertexPos(_vertexPos), textureID(texId)
 {
 	glGenVertexArrays(1, &BillboardVao);
 	glBindVertexArray(BillboardVao);
-	glGenTextures(1, &textureID); //TEXTURES
-	glBindTexture(GL_TEXTURE_2D, textureID); //TEXTURES
+	//glGenTextures(1, &textureID); //TEXTURES
+	//glBindTexture(GL_TEXTURE_2D, textureID); //TEXTURES
+	//if (_data) glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, _data); //TEXTURES
+	//else std::cout << "Failed to load texture" << std::endl;
 
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glGenBuffers(1, &BillboardVbo);
 
-	if (_data) glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, _data); //TEXTURES
-	else std::cout << "Failed to load texture" << std::endl;
-
-	glGenBuffers(1, BillboardVbo);
-
-	glBindBuffer(GL_ARRAY_BUFFER, BillboardVbo[0]);
+	glBindBuffer(GL_ARRAY_BUFFER, BillboardVbo);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3), &vertexPos, GL_STATIC_DRAW);
 	glVertexAttribPointer((GLuint)0, 3, GL_FLOAT, GL_FALSE, 0, 0);
 	glEnableVertexAttribArray(0);
@@ -52,7 +48,7 @@ void Billboard::Draw(float _width, float _height)
 
 void Billboard::CleanUp()
 {
-	glDeleteBuffers(1, BillboardVbo);
+	glDeleteBuffers(1, &BillboardVbo);
 	glDeleteVertexArrays(1, &BillboardVao);
 	shader.CleanUpShader();
 
