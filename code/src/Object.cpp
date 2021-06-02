@@ -1,8 +1,8 @@
 #include "Object.h"
 
 Object::Object(Model _model, unsigned int texId, glm::vec3 _startPos, glm::vec3 _startRot, glm::vec3 _startScale, glm::vec3 _startColor,
-	const char* vertexPath, const char* fragmentPath, const char* geometryPath) : textureID(texId), position(_startPos),
-	rotation(_startRot), scale(_startScale), objectColor(_startColor), initPos(_startPos), initRot(_startRot), initScale(_startScale)
+	Shader _shader) : textureID(texId), position(_startPos),
+	rotation(_startRot), scale(_startScale), objectColor(_startColor), initPos(_startPos), initRot(_startRot), initScale(_startScale), shader(_shader)
 {	
 	//--> Carreguem textura
 	//texturePath == nullptr ? data = false : data = stbi_load(texturePath, &texWidth, &texHeight, &nrChannels, 4);
@@ -46,7 +46,7 @@ Object::Object(Model _model, unsigned int texId, glm::vec3 _startPos, glm::vec3 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
 	// Es crida un constructor de shader o un altre depenent de si s'ha passat el path d'un geometry shader al constructor de l'objecte
-	geometryPath == nullptr ? shader = Shader(vertexPath, fragmentPath) : shader = Shader(vertexPath, fragmentPath, geometryPath);
+//	geometryPath == nullptr ? shader = Shader(vertexPath, fragmentPath) : shader = Shader(vertexPath, fragmentPath, geometryPath);
 
 	glBindAttribLocation(shader.GetID(), 0, "aPos");
 	glBindAttribLocation(shader.GetID(), 1, "aUvs");
@@ -64,7 +64,14 @@ void Object::Update()
 	glm::mat4 s = glm::scale(glm::mat4(), scale);
 	objMat = t * r1 * r2 * r3 * s;
 	
-	
+}
+void Object::Draw()
+{
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, textureID);
+
+	glBindVertexArray(ObjVao);
+	shader.SetFloat3("objectColor", objectColor);
 }
 
 void Object::Draw(Light light)
@@ -100,6 +107,8 @@ void Object::Draw(Light light)
 	glBindVertexArray(0);
 }
 
+
+
 void Object::Draw(float currentTime, float auxTime, float magnitude, bool startAnimation, bool shouldSubdivide)
 {
 	if (startAnimation) currentTime = (sin(ImGui::GetTime() - auxTime) + 1.0) / 2.0;
@@ -121,6 +130,9 @@ void Object::Draw(float currentTime, float auxTime, float magnitude, bool startA
 	glUseProgram(0);
 	glBindVertexArray(0);
 }
+
+
+
 
 void Object::CleanUp()
 {

@@ -17,6 +17,14 @@ std::vector<Object> objects; //--> Vector que emmagatzema els objectes que s'ins
 std::vector<Billboard> billboards; //--> Vector que emmagatzema les billboards que s'instancien a l'escena.
 std::string s; //--> String declarat global per no redeclarar-lo a cada frame. S'usa pels noms del ImGui.
 
+glm::vec3 cameraOffset = glm::vec3(1.25, -4.5, 1);
+
+bool isFirstPerson = false;
+bool usingInstancing = false;
+Shader objShader;
+int amount = 10;
+glm::mat4* modelMatrices;
+
 namespace RenderVars {
 	float FOV = glm::radians(90.f);
 	float zNear = 1.f;
@@ -53,9 +61,6 @@ namespace GeometryShadersInfo
 	float height = 10.0f;
 }
 namespace GSI = GeometryShadersInfo;
-
-bool isFirstPerson = false;
-glm::vec3 cameraOffset = glm::vec3(1.25, -4.5, 1);
 
 ///////// fw decl
 namespace ImGui {
@@ -481,16 +486,27 @@ void GLinit(int width, int height) {
 	Texture treeText02(Texture::ETYPE::BB, treeTexture2);
 	Texture treeText03(Texture::ETYPE::BB, treeTexture3);
 
+
+	// Shaders
+	objShader = Shader(modelVS, modelFS);
+
+#pragma region Models
+
 	// Carguem i generem les models
 	Model carModel(carObj);
 
 	// Crida al constructor de la classe amb els diferents objectes
 	Object camaro(carModel, camaroTexture.GetID(), glm::vec3(-3.11f, 1.6f, 2.71f), glm::vec3(0, 4.71f, 0), glm::vec3(0.05f, 0.05f, 0.05f),
-		glm::vec3(0.1f, 0.1f, 0.1f), modelVS, modelFS, nullptr);
-
+		glm::vec3(0.1f, 0.1f, 0.1f), objShader);
 
 	// Emmagatzema els objectes creats al vector
 	objects.push_back(camaro);
+
+	for (int i = 0; i < amount; i++)
+	{
+		modelMatrices = new glm::mat4[amount];
+	}
+#pragma endregion Carreguem, generem i emmagatzemem els models
 
 	// Carreguem varies textures diferents per poder spawnejar billboards randomitzades
 
@@ -542,9 +558,24 @@ void GLrender(float dt) {
 	RV::_MVP = RV::_projection * RV::_modelView;
 	Axis::draw();
 	CubeMap::draw();
+	if (!usingInstancing)
+	{
+		for (Object obj : objects) { obj.Update(); obj.Draw(light); }
+	}
+	//else // USING INSTANCING
+	//{
+	//	objShader.Use();
 
-	for (Object obj : objects) { obj.Update(); obj.Draw(light); }
+	//	for (Object obj : objects)
+	//	{
+	//		objShader.SetMat4("model", 1, GL_FALSE, glm::value_ptr(objMat));
+	//		objShader.SetFloat3("objectColor", objectColor);
+	//		glActiveTexture(GL_TEXTURE0);
+	//		glBindTexture(GL_TEXTURE_2D, textureID);
 
+	//		glBindVertexArray(ObjVao);
+	//	}
+	//}
 	ImGui::Render();
 }
 
