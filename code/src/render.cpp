@@ -6,6 +6,7 @@
 #include "Billboard.h"
 #include "Constants.h"
 #include "Texture.h"
+#include "Model.h"
 
 // Declaració de la funció del loadCubemap
 extern unsigned int loadCubemap(std::vector<std::string> faces);
@@ -52,6 +53,9 @@ namespace GeometryShadersInfo
 	float height = 10.0f;
 }
 namespace GSI = GeometryShadersInfo;
+
+bool isFirstPerson = false;
+glm::vec3 cameraOffset = glm::vec3(1.25, -4.5, 1);
 
 ///////// fw decl
 namespace ImGui {
@@ -363,7 +367,7 @@ namespace CubeMap {
 		 10.0f, -10.0f, -10.0f,
 		 10.0f,  10.0f, -10.0f,
 		-10.0f,  10.0f, -10.0f,
-		
+
 		-10.0f, -10.0f,  10.0f,
 		-10.0f, -10.0f, -10.0f,
 		-10.0f,  10.0f, -10.0f,
@@ -391,7 +395,7 @@ namespace CubeMap {
 		 10.0f,  10.0f,  10.0f,
 		-10.0f,  10.0f,  10.0f,
 		-10.0f,  10.0f, -10.0f,
-	
+
 		-10.0f, -10.0f, -10.0f,
 		-10.0f, -10.0f,  10.0f,
 		 10.0f, -10.0f, -10.0f,
@@ -435,7 +439,7 @@ namespace CubeMap {
 	void draw() {
 		glDepthFunc(GL_LEQUAL);
 		cubeMapShader.Use();
-		
+
 		glm::mat4 cameraPoint = glm::translate(RV::_modelView, glm::vec3(glm::inverse(RV::_modelView)[3]));
 		cubeMapShader.SetMat4("view", 1, GL_FALSE, glm::value_ptr(cameraPoint));
 		cubeMapShader.SetMat4("projection", 1, GL_FALSE, glm::value_ptr(RV::_projection));
@@ -461,7 +465,7 @@ void GLinit(int width, int height) {
 	glClearDepth(1.f);
 	glDepthFunc(GL_LEQUAL);
 	glEnable(GL_DEPTH_TEST);
-	glEnable(GL_CULL_FACE);
+	//glEnable(GL_CULL_FACE);
 
 	RV::_projection = glm::perspective(RV::FOV, (float)width / (float)height, RV::zNear, RV::zFar);
 
@@ -477,9 +481,13 @@ void GLinit(int width, int height) {
 	Texture treeText02(Texture::ETYPE::BB, treeTexture2);
 	Texture treeText03(Texture::ETYPE::BB, treeTexture3);
 
+	// Carguem i generem les models
+	Model carModel(carObj);
+
 	// Crida al constructor de la classe amb els diferents objectes
-	Object camaro(carObj, camaroTexture.GetID(), glm::vec3(-3.11f, 1.6f, 2.71f), glm::vec3(0, 4.71f, 0), glm::vec3(0.05f, 0.05f, 0.05f),
+	Object camaro(carModel, camaroTexture.GetID(), glm::vec3(-3.11f, 1.6f, 2.71f), glm::vec3(0, 4.71f, 0), glm::vec3(0.05f, 0.05f, 0.05f),
 		glm::vec3(0.1f, 0.1f, 0.1f), modelVS, modelFS, nullptr);
+
 
 	// Emmagatzema els objectes creats al vector
 	objects.push_back(camaro);
@@ -515,9 +523,22 @@ void GLrender(float dt) {
 
 	RV::_modelView = glm::mat4(1.f);
 
-	RV::_modelView = glm::translate(RV::_modelView, glm::vec3(RV::panv[0], RV::panv[1], RV::panv[2]));
-	RV::_modelView = glm::rotate(RV::_modelView, RV::rota[1], glm::vec3(1.f, 0.f, 0.f));
-	RV::_modelView = glm::rotate(RV::_modelView, RV::rota[0], glm::vec3(0.f, 1.f, 0.f));
+	// Mover Coches
+	objects[0].rotation.y += dt;
+
+	if (!isFirstPerson)
+	{
+		RV::_modelView = glm::translate(RV::_modelView, glm::vec3(RV::panv[0], RV::panv[1], RV::panv[2]));
+		RV::_modelView = glm::rotate(RV::_modelView, RV::rota[1], glm::vec3(1.f, 0.f, 0.f));
+		RV::_modelView = glm::rotate(RV::_modelView, RV::rota[0], glm::vec3(0.f, 1.f, 0.f));
+	}
+	else {
+		RV::_modelView = glm::rotate(RV::_modelView, RV::rota[1], glm::vec3(1.f, 0.f, 0.f));
+		RV::_modelView = glm::rotate(RV::_modelView, RV::rota[0], glm::vec3(0.f, 1.f, 0.f));
+		RV::_modelView = glm::translate(RV::_modelView, cameraOffset);
+		RV::_modelView = glm::rotate(RV::_modelView, -objects[0].rotation.y - glm::pi<float>(), glm::vec3(0.0f, 1.0f, 0.0f));
+		RV::_modelView = glm::translate(RV::_modelView, -objects[0].position);
+	}
 	RV::_MVP = RV::_projection * RV::_modelView;
 	Axis::draw();
 	CubeMap::draw();
@@ -537,6 +558,11 @@ void GUI()
 	/////////////////////////////////////////////////////TODO
 	// Do your GUI code here....
 
+	ImGui::Checkbox("First Person View", &isFirstPerson);
+	ImGui::DragFloat3("Camera Offset", (float*)&cameraOffset, 0.01f, -50.f, 50.f);
+
+	ImGui::DragFloat3("Car Position", (float*)&objects[0].position, 0.01f, -50.f, 50.f);
+	ImGui::DragFloat3("Car Rotation", (float*)&objects[0].rotation, 0.01f, -360.f, 360.f);
 	ImGui::End();
 
 	// Example code -- ImGui test window. Most of the sample code is in ImGui::ShowTestWindow()

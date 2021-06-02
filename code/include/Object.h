@@ -1,6 +1,6 @@
 #pragma once
 #include "Shader.h"
-
+#include "Model.h"
 //Classe "Objecte": Agrupa els atributs necessaris dels objectes que carguem i instanciem a l'escena.
 //També conté els seus shaders
 class Object
@@ -17,16 +17,12 @@ private:
 	std::string name;
 	glm::vec3 initPos, initRot, initScale;
 
-	std::vector< glm::vec3 > vertices;
-	std::vector< glm::vec2 > uvs;
-	std::vector< glm::vec3 > normals;
-
 	int numVertices;
 
 	Shader shader;
 
 public:
-	Object(const char*, unsigned int, glm::vec3, glm::vec3, glm::vec3, glm::vec3, const char*, const char*, const char* = nullptr);
+	Object(Model, unsigned int, glm::vec3, glm::vec3, glm::vec3, glm::vec3, const char*, const char*, const char* = nullptr);
 
 	glm::vec3 objectColor;
 	glm::vec3 position, rotation, scale;

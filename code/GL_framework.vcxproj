@@ -145,6 +145,7 @@ xcopy "$(ProjectDir)libs\SDL2.dll" "$(OutDir)" /y /d</Command>
     <ClCompile Include="src\LoadCubeMap.cpp" />
     <ClCompile Include="src\load_obj.cpp" />
     <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\Model.cpp" />
     <ClCompile Include="src\Object.cpp" />
     <ClCompile Include="src\render.cpp" />
     <ClCompile Include="src\Shader.cpp" />
@@ -153,6 +154,7 @@ xcopy "$(ProjectDir)libs\SDL2.dll" "$(OutDir)" /y /d</Command>
   <ItemGroup>
     <ClInclude Include="include\Billboard.h" />
     <ClInclude Include="include\Constants.h" />
+    <ClInclude Include="include\Model.h" />
     <ClInclude Include="include\Object.h" />
     <ClInclude Include="include\Shader.h" />
     <ClInclude Include="include\stb_image.h" />

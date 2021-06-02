@@ -1,22 +1,14 @@
 #include "Object.h"
 
-// Declaració de la funció del load_obj.cpp que serveix per cargar els vertexs, uvs i normals dels models que importem
-extern bool loadOBJ(const char* path, std::vector < glm::vec3 >& out_vertices, std::vector < glm::vec2 >& out_uvs, std::vector < glm::vec3 >& out_normals);    
-
-Object::Object(const char* _objPath, unsigned int texId, glm::vec3 _startPos, glm::vec3 _startRot, glm::vec3 _startScale, glm::vec3 _startColor,
-	const char* vertexPath, const char* fragmentPath, const char* geometryPath) : textureID(texId),	name(_objPath), position(_startPos),
+Object::Object(Model _model, unsigned int texId, glm::vec3 _startPos, glm::vec3 _startRot, glm::vec3 _startScale, glm::vec3 _startColor,
+	const char* vertexPath, const char* fragmentPath, const char* geometryPath) : textureID(texId), position(_startPos),
 	rotation(_startRot), scale(_startScale), objectColor(_startColor), initPos(_startPos), initRot(_startRot), initScale(_startScale)
-{
-	bool res = loadOBJ(_objPath, vertices, uvs, normals);
-	
+{	
 	//--> Carreguem textura
 	//texturePath == nullptr ? data = false : data = stbi_load(texturePath, &texWidth, &texHeight, &nrChannels, 4);
 
-	numVertices = vertices.size();
-
-	// Cambiem l'string del path que rebem de l'objecte per deixar només visible el seu nom per després fer-ho servir al ImGui
-	name.erase(name.size() - 4, name.size());
-	name.erase(name.begin(), name.begin() + 4);
+	numVertices = _model.GetVertices().size();
+	name = _model.GetName();
 
 	glGenVertexArrays(1, &ObjVao);
 	glBindVertexArray(ObjVao);
@@ -35,17 +27,17 @@ Object::Object(const char* _objPath, unsigned int texId, glm::vec3 _startPos, gl
 	glGenBuffers(3, ObjVbo);
 
 	glBindBuffer(GL_ARRAY_BUFFER, ObjVbo[0]);
-	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(glm::vec3), &vertices[0], GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, numVertices * sizeof(glm::vec3), &_model.GetVertices()[0], GL_STATIC_DRAW);
 	glVertexAttribPointer((GLuint)0, 3, GL_FLOAT, GL_FALSE, 0, 0);
 	glEnableVertexAttribArray(0);
 
 	glBindBuffer(GL_ARRAY_BUFFER, ObjVbo[1]);
-	glBufferData(GL_ARRAY_BUFFER, uvs.size() * sizeof(glm::vec2), &uvs[0], GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, _model.GetUvs().size() * sizeof(glm::vec2), &_model.GetUvs()[0], GL_STATIC_DRAW);
 	glVertexAttribPointer((GLuint)1, 2, GL_FLOAT, GL_FALSE, 0, 0);
 	glEnableVertexAttribArray(1);
 
 	glBindBuffer(GL_ARRAY_BUFFER, ObjVbo[2]);
-	glBufferData(GL_ARRAY_BUFFER, normals.size() * sizeof(glm::vec3), &normals[0], GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, _model.GetNormals().size() * sizeof(glm::vec3), &_model.GetNormals()[0], GL_STATIC_DRAW);
 	glVertexAttribPointer((GLuint)2, 3, GL_FLOAT, GL_FALSE, 0, 0);
 	glEnableVertexAttribArray(2);
 
@@ -59,22 +51,20 @@ Object::Object(const char* _objPath, unsigned int texId, glm::vec3 _startPos, gl
 	glBindAttribLocation(shader.GetID(), 0, "aPos");
 	glBindAttribLocation(shader.GetID(), 1, "aUvs");
 	glBindAttribLocation(shader.GetID(), 2, "aNormal");
-
-	// Allibera memoria de la cpu
-	vertices.clear();
-	normals.clear();
-	uvs.clear();
 }
-
 
 void Object::Update()
 {
+	float time = ImGui::GetTime();
+
 	glm::mat4 t = glm::translate(glm::mat4(), position);
 	glm::mat4 r1 = glm::rotate(glm::mat4(), rotation.x, glm::vec3(1, 0, 0));
 	glm::mat4 r2 = glm::rotate(glm::mat4(), rotation.y, glm::vec3(0, 1, 0));
 	glm::mat4 r3 = glm::rotate(glm::mat4(), rotation.z, glm::vec3(0, 0, 1));
 	glm::mat4 s = glm::scale(glm::mat4(), scale);
 	objMat = t * r1 * r2 * r3 * s;
+	
+	
 }
 
 void Object::Draw(Light light)
