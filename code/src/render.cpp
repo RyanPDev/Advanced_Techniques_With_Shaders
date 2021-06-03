@@ -29,7 +29,7 @@ glm::mat4* modelMatrices;
 
 namespace RenderVars {
 	float FOV = glm::radians(90.f);
-	float zNear = 1.f;
+	float zNear = 0.01f;
 	float zFar = 5000.f;
 
 	glm::mat4 _projection;
@@ -444,7 +444,6 @@ namespace CubeMap {
 	}
 
 	void draw() {
-		glDepthFunc(GL_LEQUAL);
 		cubeMapShader.Use();
 
 		glm::mat4 cameraPoint = glm::translate(RV::_modelView, glm::vec3(glm::inverse(RV::_modelView)[3]));
@@ -458,8 +457,6 @@ namespace CubeMap {
 
 		glBindVertexArray(0);
 		//glUseProgram(0);
-
-		glDepthFunc(GL_LESS);
 	}
 }
 
@@ -537,8 +534,8 @@ void GLcleanup() {
 }
 
 void GLrender(float dt) {
-	glBindFramebuffer(GL_FRAMEBUFFER, frameBuffer.fbo);
 	glEnable(GL_DEPTH_TEST);
+	glBindFramebuffer(GL_FRAMEBUFFER, frameBuffer.fbo);
 
 	glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -548,7 +545,7 @@ void GLrender(float dt) {
 	// Mover Coches
 	//objects[0].rotation.y += dt;
 
-		if (!isFirstPerson)
+	if (!isFirstPerson)
 	{
 		RV::_modelView = glm::translate(RV::_modelView, glm::vec3(RV::panv[0], RV::panv[1], RV::panv[2]));
 		RV::_modelView = glm::rotate(RV::_modelView, RV::rota[1], glm::vec3(1.f, 0.f, 0.f));
@@ -563,27 +560,25 @@ void GLrender(float dt) {
 	}
 	RV::_MVP = RV::_projection * RV::_modelView;
 
-	//Axis::draw();
-
-	CubeMap::draw();
-
-	for (Object obj : objects) { obj.Update(); obj.Draw(light); }
-
-	//-------------------------------------------------------------------------------//	
-	glBindVertexArray(0);
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-	//glClearColor(1.f, 1.f, 1.f, 1.f);
-
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	
 	Axis::draw();
 	CubeMap::draw();
 
 	for (Object obj : objects) { obj.Update(); obj.Draw(light); }
-
-	frameBuffer.DrawCubeFBOTex(objects[0].objMat);
 	
+	//-------------------------------------------------------------------------------//	
+	glBindVertexArray(0);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+	glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	Axis::draw();
+	CubeMap::draw();
+
+	for (Object obj : objects) { obj.Update(); obj.Draw(light); }
+	
+	frameBuffer.DrawCubeFBOTex(objects[0].objMat);
+	//GLResize();
 	ImGui::Render();
 }
 
@@ -602,7 +597,6 @@ void GUI()
 
 	ImGui::DragFloat3("Car Position", (float*)&objects[0].position, 0.01f, -50.f, 50.f);
 	ImGui::DragFloat3("Car Rotation", (float*)&objects[0].rotation, 0.01f, -360.f, 360.f);
-
 
 	ImGui::End();
 

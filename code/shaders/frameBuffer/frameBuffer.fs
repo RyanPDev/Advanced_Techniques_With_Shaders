@@ -4,5 +4,5 @@ in vec2 texCoord;
 uniform sampler2D diffuseTexture;
 
 void main(){
-	FragColor = vec4(1, 1, 1, 1);
+	FragColor = texture(diffuseTexture, texCoord) * vec4(1, 1, 1, 1);
 }
