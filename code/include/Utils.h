@@ -24,7 +24,7 @@ struct Light {
 	glm::vec3 ambientColor = { 1.f, 1.f, 1.f };
 	glm::vec3 specularColor = { 1.f, 1.f, 1.f };
 	glm::vec3 spotLightDirection = { 0.f,1.f,0.f };
-	float intensity = 10.f;
+	float intensity = 1.f;
 	float ambientIntensity = 0.1f;
 	float diffuseIntensity = 1.f;
 	float specularIntensity = 1.f;

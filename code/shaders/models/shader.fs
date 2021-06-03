@@ -8,7 +8,6 @@
 	uniform vec3 lightPos;
 	uniform vec3 spotLightDir;
 	uniform vec3 lightColor;
-	uniform vec3 objectColor;
 	uniform vec3 ambientColor;
 	uniform vec3 specularColor;
 	uniform float lightIntensity;
@@ -51,7 +50,7 @@
 			reflectDir = reflect(lightDir, norm);
 			spec = pow(max(dot(viewDir, reflectDir), 0.0), shininessValue);
 			specular = specularStrength * spec * lightColor;
-			result = (ambient + diffuse + (specular * specularColor)) * objectColor * lightIntensity;
+			result = (ambient + diffuse + (specular * specularColor)) * lightIntensity;
 			break;
 		case 2:
 			// DIFFUSE //
@@ -70,7 +69,7 @@
 			ambient = ambient * attenuation;
 			diffuse = diffuse * attenuation;
 			specular = specular * attenuation;
-			result = (ambient + diffuse + (specular * specularColor)) * objectColor * lightIntensity;
+			result = (ambient + diffuse + (specular * specularColor)) * lightIntensity;
 			break;
 		case 3:
 			lightDir = normalize(lightPos - FragPos);
@@ -93,7 +92,7 @@
 				diffuse = diffuse * attenuation;
 				specular = specular * attenuation;
 					}
-				result = (ambient + diffuse + (specular * specularColor)) * objectColor * lightIntensity;
+				result = (ambient + diffuse + (specular * specularColor)) * lightIntensity;
 			}
 			else {
 				result = ambient;

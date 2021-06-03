@@ -10,7 +10,6 @@ private:
 	unsigned int textureID;
 	GLuint ObjVbo[3];
 	
-	glm::mat4 objMat;
 
 	//int texWidth, texHeight, nrChannels;
 	//unsigned char* data;
@@ -21,11 +20,11 @@ private:
 
 
 public:
-	Object(Model, unsigned int, glm::vec3, glm::vec3, glm::vec3, glm::vec3, Shader);
+	Object(Model, unsigned int, glm::vec3, glm::vec3, glm::vec3, Shader);
 
-	glm::vec3 objectColor;
 	glm::vec3 position, rotation, scale;
 	Shader shader;
+	glm::mat4 objMat;
 
 	void Update();
 	void Draw();

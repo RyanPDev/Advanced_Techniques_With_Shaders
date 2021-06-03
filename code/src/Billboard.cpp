@@ -5,10 +5,6 @@ Billboard::Billboard(glm::vec3 _vertexPos, unsigned int texId, int width, int he
 {
 	glGenVertexArrays(1, &BillboardVao);
 	glBindVertexArray(BillboardVao);
-	//glGenTextures(1, &textureID); //TEXTURES
-	//glBindTexture(GL_TEXTURE_2D, textureID); //TEXTURES
-	//if (_data) glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, _data); //TEXTURES
-	//else std::cout << "Failed to load texture" << std::endl;
 
 	glGenBuffers(1, &BillboardVbo);
 

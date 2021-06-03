@@ -1,8 +1,8 @@
 #include "Object.h"
 
-Object::Object(Model _model, unsigned int texId, glm::vec3 _startPos, glm::vec3 _startRot, glm::vec3 _startScale, glm::vec3 _startColor,
-	Shader _shader) : textureID(texId), position(_startPos),
-	rotation(_startRot), scale(_startScale), objectColor(_startColor), initPos(_startPos), initRot(_startRot), initScale(_startScale), shader(_shader)
+Object::Object(Model _model, unsigned int texId, glm::vec3 _startPos, glm::vec3 _startRot, glm::vec3 _startScale,
+	Shader _shader) : textureID(texId), position(_startPos), rotation(_startRot), scale(_startScale), 
+	initPos(_startPos), initRot(_startRot), initScale(_startScale), shader(_shader)
 {	
 	//--> Carreguem textura
 	//texturePath == nullptr ? data = false : data = stbi_load(texturePath, &texWidth, &texHeight, &nrChannels, 4);
@@ -55,7 +55,6 @@ Object::Object(Model _model, unsigned int texId, glm::vec3 _startPos, glm::vec3 
 
 void Object::Update()
 {
-	float time = ImGui::GetTime();
 
 	glm::mat4 t = glm::translate(glm::mat4(), position);
 	glm::mat4 r1 = glm::rotate(glm::mat4(), rotation.x, glm::vec3(1, 0, 0));
@@ -71,7 +70,6 @@ void Object::Draw()
 	glBindTexture(GL_TEXTURE_2D, textureID);
 
 	glBindVertexArray(ObjVao);
-	shader.SetFloat3("objectColor", objectColor);
 }
 
 void Object::Draw(Light light)
@@ -84,7 +82,6 @@ void Object::Draw(Light light)
 	shader.SetMat4("model", 1, GL_FALSE, glm::value_ptr(objMat));
 	shader.SetMat4("view", 1, GL_FALSE, glm::value_ptr(RenderVars::_modelView));
 	shader.SetMat4("projection", 1, GL_FALSE, glm::value_ptr(RenderVars::_projection));
-	shader.SetFloat3("objectColor", objectColor);
 	shader.SetFloat3("lightColor", light.color);
 	shader.SetFloat3("lightPos", light.position);
 	shader.SetFloat3("spotLightDir", light.spotLightDirection);
@@ -106,8 +103,6 @@ void Object::Draw(Light light)
 	glUseProgram(0);
 	glBindVertexArray(0);
 }
-
-
 
 void Object::Draw(float currentTime, float auxTime, float magnitude, bool startAnimation, bool shouldSubdivide)
 {

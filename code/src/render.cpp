@@ -7,6 +7,7 @@
 #include "Constants.h"
 #include "Texture.h"
 #include "Model.h"
+#include "FrameBuffer.h"
 
 // Declaració de la funció del loadCubemap
 extern unsigned int loadCubemap(std::vector<std::string> faces);
@@ -16,6 +17,7 @@ Scene scene;
 std::vector<Object> objects; //--> Vector que emmagatzema els objectes que s'instancien a l'escena.
 std::vector<Billboard> billboards; //--> Vector que emmagatzema les billboards que s'instancien a l'escena.
 std::string s; //--> String declarat global per no redeclarar-lo a cada frame. S'usa pels noms del ImGui.
+FrameBuffer frameBuffer;
 
 glm::vec3 cameraOffset = glm::vec3(1.25, -4.5, 1);
 
@@ -431,7 +433,7 @@ namespace CubeMap {
 		glEnableVertexAttribArray(0);
 		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 
-		cubeMapShader = Shader(skyBoxVs, skyBoxFs);
+		cubeMapShader = Shader(skyBoxVS, skyBoxFS);
 	}
 
 	void cleanup() {
@@ -486,9 +488,10 @@ void GLinit(int width, int height) {
 	Texture treeText02(Texture::ETYPE::BB, treeTexture2);
 	Texture treeText03(Texture::ETYPE::BB, treeTexture3);
 
-
 	// Shaders
 	objShader = Shader(modelVS, modelFS);
+
+	frameBuffer = FrameBuffer(frameBufferVS, frameBufferFS, frameBufferGS);
 
 #pragma region Models
 
@@ -496,16 +499,15 @@ void GLinit(int width, int height) {
 	Model carModel(carObj);
 
 	// Crida al constructor de la classe amb els diferents objectes
-	Object camaro(carModel, camaroTexture.GetID(), glm::vec3(-3.11f, 1.6f, 2.71f), glm::vec3(0, 4.71f, 0), glm::vec3(0.05f, 0.05f, 0.05f),
-		glm::vec3(0.1f, 0.1f, 0.1f), objShader);
+	Object camaro(carModel, camaroTexture.GetID(), glm::vec3(-3.11f, 1.6f, 2.71f), glm::vec3(0, 4.71f, 0), glm::vec3(0.05f, 0.05f, 0.05f), objShader);
 
 	// Emmagatzema els objectes creats al vector
 	objects.push_back(camaro);
 
-	for (int i = 0; i < amount; i++)
+	/*for (int i = 0; i < amount; i++)
 	{
 		modelMatrices = new glm::mat4[amount];
-	}
+	}*/
 #pragma endregion Carreguem, generem i emmagatzemem els models
 
 	// Carreguem varies textures diferents per poder spawnejar billboards randomitzades
@@ -535,14 +537,18 @@ void GLcleanup() {
 }
 
 void GLrender(float dt) {
+	glBindFramebuffer(GL_FRAMEBUFFER, frameBuffer.fbo);
+	glEnable(GL_DEPTH_TEST);
+
+	glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	RV::_modelView = glm::mat4(1.f);
 
 	// Mover Coches
-	objects[0].rotation.y += dt;
+	//objects[0].rotation.y += dt;
 
-	if (!isFirstPerson)
+		if (!isFirstPerson)
 	{
 		RV::_modelView = glm::translate(RV::_modelView, glm::vec3(RV::panv[0], RV::panv[1], RV::panv[2]));
 		RV::_modelView = glm::rotate(RV::_modelView, RV::rota[1], glm::vec3(1.f, 0.f, 0.f));
@@ -556,26 +562,28 @@ void GLrender(float dt) {
 		RV::_modelView = glm::translate(RV::_modelView, -objects[0].position);
 	}
 	RV::_MVP = RV::_projection * RV::_modelView;
+
+	//Axis::draw();
+
+	CubeMap::draw();
+
+	for (Object obj : objects) { obj.Update(); obj.Draw(light); }
+
+	//-------------------------------------------------------------------------------//	
+	glBindVertexArray(0);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+	//glClearColor(1.f, 1.f, 1.f, 1.f);
+
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	
 	Axis::draw();
 	CubeMap::draw();
-	if (!usingInstancing)
-	{
-		for (Object obj : objects) { obj.Update(); obj.Draw(light); }
-	}
-	//else // USING INSTANCING
-	//{
-	//	objShader.Use();
 
-	//	for (Object obj : objects)
-	//	{
-	//		objShader.SetMat4("model", 1, GL_FALSE, glm::value_ptr(objMat));
-	//		objShader.SetFloat3("objectColor", objectColor);
-	//		glActiveTexture(GL_TEXTURE0);
-	//		glBindTexture(GL_TEXTURE_2D, textureID);
+	for (Object obj : objects) { obj.Update(); obj.Draw(light); }
 
-	//		glBindVertexArray(ObjVao);
-	//	}
-	//}
+	frameBuffer.DrawCubeFBOTex(objects[0].objMat);
+	
 	ImGui::Render();
 }
 
@@ -594,6 +602,8 @@ void GUI()
 
 	ImGui::DragFloat3("Car Position", (float*)&objects[0].position, 0.01f, -50.f, 50.f);
 	ImGui::DragFloat3("Car Rotation", (float*)&objects[0].rotation, 0.01f, -360.f, 360.f);
+
+
 	ImGui::End();
 
 	// Example code -- ImGui test window. Most of the sample code is in ImGui::ShowTestWindow()

@@ -142,6 +142,7 @@ xcopy "$(ProjectDir)libs\SDL2.dll" "$(OutDir)" /y /d</Command>
     <ClCompile Include="include\imgui\imgui_draw.cpp" />
     <ClCompile Include="include\imgui\imgui_impl_sdl_gl3.cpp" />
     <ClCompile Include="src\Billboard.cpp" />
+    <ClCompile Include="src\FrameBuffer.cpp" />
     <ClCompile Include="src\LoadCubeMap.cpp" />
     <ClCompile Include="src\load_obj.cpp" />
     <ClCompile Include="src\main.cpp" />
@@ -154,6 +155,7 @@ xcopy "$(ProjectDir)libs\SDL2.dll" "$(OutDir)" /y /d</Command>
   <ItemGroup>
     <ClInclude Include="include\Billboard.h" />
     <ClInclude Include="include\Constants.h" />
+    <ClInclude Include="include\FrameBuffer.h" />
     <ClInclude Include="include\Model.h" />
     <ClInclude Include="include\Object.h" />
     <ClInclude Include="include\Shader.h" />
