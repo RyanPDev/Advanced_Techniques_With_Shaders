@@ -488,7 +488,7 @@ void GLinit(int width, int height) {
 	// Shaders
 	objShader = Shader(modelVS, modelFS);
 
-	frameBuffer = FrameBuffer(frameBufferVS, frameBufferFS, frameBufferGS);
+	frameBuffer = FrameBuffer(frameBufferVS, frameBufferFS);
 
 #pragma region Models
 
@@ -531,54 +531,65 @@ void GLcleanup() {
 
 	for (Billboard bb : billboards) bb.CleanUp();
 	billboards.clear(); //--> Allibera memòria del vector de billboards
+
+	frameBuffer.CleanUp();
+}
+void RenderDraw()
+{
+	Axis::draw();
+	CubeMap::draw();
+
+	for (Object obj : objects) { obj.Update(); obj.Draw(light); }
 }
 
 void GLrender(float dt) {
+	
 	glEnable(GL_DEPTH_TEST);
-	glBindFramebuffer(GL_FRAMEBUFFER, frameBuffer.fbo);
 
-	glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-	RV::_modelView = glm::mat4(1.f);
-
-	// Mover Coches
-	//objects[0].rotation.y += dt;
-
+	RV::_modelView = glm::mat4(1);
 	if (!isFirstPerson)
 	{
 		RV::_modelView = glm::translate(RV::_modelView, glm::vec3(RV::panv[0], RV::panv[1], RV::panv[2]));
 		RV::_modelView = glm::rotate(RV::_modelView, RV::rota[1], glm::vec3(1.f, 0.f, 0.f));
 		RV::_modelView = glm::rotate(RV::_modelView, RV::rota[0], glm::vec3(0.f, 1.f, 0.f));
+		RV::_MVP = RV::_projection * RV::_modelView;
+		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		RenderDraw();
 	}
 	else {
+	#pragma region FrameBuffer
+		
+		GLResize(800, 600);
+		glBindFramebuffer(GL_FRAMEBUFFER, frameBuffer.fbo);
+		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		RV::_modelView = glm::translate(RV::_modelView, frameBuffer.localPosition);
+		RV::_modelView = glm::rotate(RV::_modelView, -objects[0].rotation.y, glm::vec3(0.0f, 1.0f, 0.0f));
+		RV::_modelView = glm::translate(RV::_modelView, -objects[0].position);
+		RV::_MVP = RV::_projection * RV::_modelView;
+
+		RenderDraw();
+
+		//-------------------------------------------------------------------------------//	
+		glBindVertexArray(0);
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		GLResize(1800, 960);
+	#pragma endregion
+		RV::_modelView = glm::mat4(1);
 		RV::_modelView = glm::rotate(RV::_modelView, RV::rota[1], glm::vec3(1.f, 0.f, 0.f));
 		RV::_modelView = glm::rotate(RV::_modelView, RV::rota[0], glm::vec3(0.f, 1.f, 0.f));
 		RV::_modelView = glm::translate(RV::_modelView, cameraOffset);
 		RV::_modelView = glm::rotate(RV::_modelView, -objects[0].rotation.y - glm::pi<float>(), glm::vec3(0.0f, 1.0f, 0.0f));
 		RV::_modelView = glm::translate(RV::_modelView, -objects[0].position);
+		RV::_MVP = RV::_projection * RV::_modelView;
+		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		RenderDraw();
+		frameBuffer.DrawCubeFBOTex(objects[0].position,objects[0].rotation);
 	}
-	RV::_MVP = RV::_projection * RV::_modelView;
 
-	Axis::draw();
-	CubeMap::draw();
-
-	for (Object obj : objects) { obj.Update(); obj.Draw(light); }
-	
-	//-------------------------------------------------------------------------------//	
-	glBindVertexArray(0);
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-	glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-	Axis::draw();
-	CubeMap::draw();
-
-	for (Object obj : objects) { obj.Update(); obj.Draw(light); }
-	
-	frameBuffer.DrawCubeFBOTex(objects[0].objMat);
-	//GLResize();
 	ImGui::Render();
 }
 
@@ -594,6 +605,8 @@ void GUI()
 
 	ImGui::Checkbox("First Person View", &isFirstPerson);
 	ImGui::DragFloat3("Camera Offset", (float*)&cameraOffset, 0.01f, -50.f, 50.f);
+	ImGui::DragFloat3("Mirror Position", (float*)&frameBuffer.mirrorPos, 0.01f, -50.f, 50.f);
+	ImGui::DragFloat3("Mirror Camera Position", (float*)&frameBuffer.localPosition, 0.01f, -50.f, 50.f);
 
 	ImGui::DragFloat3("Car Position", (float*)&objects[0].position, 0.01f, -50.f, 50.f);
 	ImGui::DragFloat3("Car Rotation", (float*)&objects[0].rotation, 0.01f, -360.f, 360.f);

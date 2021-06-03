@@ -7,43 +7,31 @@
 	out vec2 texCoord;
 	uniform mat4 mvp;
 	uniform mat4 view;
+	uniform mat4 objm;
 
 	void main() {
-		vec4 pos = gl_in[0].gl_Position;		
-		//vec3 up = vec3(0.0, 1.0, 0.0);
-    	//vec3 right = normalize(cross(forwardVector, up));
-		//
-		//pos -= (right * width/2);
-		//gl_Position = mvp * vec4(pos, 1.0);
-		//texCoord = vec2( 0.0, 0.0 );
-		//EmitVertex();
-		//
-		//pos.y += height;
-		//gl_Position = mvp * vec4(pos, 1.0);
-		//texCoord = vec2( 0.0, 1.0 );
-		//EmitVertex();
-		//
-		//pos += (right * width);
-		//pos.y -= height;
-		//gl_Position = mvp * vec4(pos, 1.0);
-		//texCoord = vec2( 1.0, 0.0 );
-		//EmitVertex();
-		//
-		//pos.y += height;
-		//gl_Position = mvp * vec4(pos, 1.0);
-		//texCoord = vec2( 1.0, 1.0 );
-		//EmitVertex();
-
-		gl_Position = pos + vec4(-0.2, -0.2, 0.0, 0.0);    // 1:bottom-left
+		vec3 pos = gl_in[0].gl_Position.xyz;		
+		vec3 up = vec3(0.0, 1.0, 0.0);
+    	vec3 right = normalize(cross(forwardVector, up));
+		
+		pos -= (right * width/2);
+		gl_Position = objm * vec4(pos, 1.0);
 		texCoord = vec2( 0.0, 0.0 );
-		EmitVertex();   
-		gl_Position = pos + vec4( 0.2, -0.2, 0.0, 0.0);    // 2:bottom-right
+		EmitVertex();
+		
+		pos.y += height;
+		gl_Position = objm * vec4(pos, 1.0);
 		texCoord = vec2( 1.0, 0.0 );
 		EmitVertex();
-		gl_Position = pos + vec4(-0.2,  0.2, 0.0, 0.0);    // 3:top-left
+		
+		pos += (right * width);
+		pos.y -= height;
+		gl_Position = objm * vec4(pos, 1.0);
 		texCoord = vec2( 0.0, 1.0 );
 		EmitVertex();
-		gl_Position = pos + vec4( 0.2,  0.2, 0.0, 0.0);    // 4:top-right
+		
+		pos.y += height;
+		gl_Position = objm  * vec4(pos, 1.0);
 		texCoord = vec2( 1.0, 1.0 );
 		EmitVertex();
 

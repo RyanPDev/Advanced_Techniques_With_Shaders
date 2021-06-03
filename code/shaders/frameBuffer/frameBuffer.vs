@@ -1,5 +1,16 @@
-#version 330
-	in vec3 in_Position;
-	void main(){
-		gl_Position = vec4(in_Position, 1.0);
+#version 330 core
+layout (location = 0) in vec3 aPos;
+layout (location = 1) in vec2 aTexCoords;
+
+out vec2 TexCoords;
+
+uniform mat4 objm;
+uniform mat4 view;
+uniform mat4 projection;
+
+void main()
+{
+    TexCoords = aTexCoords;   
+    vec3 FragPos = vec3(model * vec4(aPos, 1.0));
+	gl_Position = projection * view * vec4(FragPos, 1.0);
 }
