@@ -57,7 +57,7 @@ FrameBuffer::FrameBuffer(const char* vertexPath, const char* fragmentPath)
 	shader = Shader(vertexPath, fragmentPath);
 }
 void FrameBuffer::Update()
-{	
+{
 }
 
 void FrameBuffer::DrawCubeFBOTex(glm::vec3 carPosition, glm::vec3 carRotation)
