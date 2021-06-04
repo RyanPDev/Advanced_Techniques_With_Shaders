@@ -3,45 +3,49 @@
 
 class FrameBuffer
 {
+public:
+	GLuint fbo;
+
 private:
-	unsigned int fbo_tex;
-	glm::vec3 localRotation;
-	glm::vec3 localScale;
-	glm::vec3 currentPos;
-	glm::mat4 objMat;
-
-	// positions
-	float quadVertices[18] = {
-		-0.3f,  1.0f, 0.0f,
-		-0.3f,  0.7f, 0.0f,
-		 0.3f,  0.7f, 0.0f,
-		
-		-0.3f,  1.0f, 0.0f,
-		 0.3f,  0.7f, 0.0f,
-		 0.3f,  1.0f, 0.0f
-	};
-
-	// texCoord
-	float texCoords[12] = {
-	 0.0f, 1.0f,
-	 0.0f, 0.0f,
-	 1.0f, 0.0f,
-
-	 0.0f, 1.0f,
-	 1.0f, 0.0f,
-	 1.0f, 1.0f
-	};
 	GLuint vao;
 	GLuint vbo[2];
+	GLuint fbo_tex;
 
 	Shader shader;
+
+	glm::vec3 localPosition = { 0, -4.5f, 4.1f };
+	glm::vec3 mirrorPos = { 0.45f, 3.7f, 1.5f };
+	glm::vec3 localScale;
+	glm::mat4 objMat;
+
+	// Posicions dels vèrtexs del quad
+	glm::vec3 quadVertices[6] = {
+		{-0.3f,  1.0f, 0.0f},
+		{-0.3f,  0.7f, 0.0f},
+		{ 0.3f,  0.7f, 0.0f},
+						   
+		{-0.3f,  1.0f, 0.0f},
+		{ 0.3f,  0.7f, 0.0f},
+		{ 0.3f,  1.0f, 0.0f}
+	};
+
+	// Coordenades de textura
+	glm::vec2 texCoords[6] = {
+	 {0.0f, 1.0f},
+	 {0.0f, 0.0f},
+	 {1.0f, 0.0f},
+
+	 {0.0f, 1.0f},
+	 {1.0f, 0.0f},
+	 {1.0f, 1.0f}
+	};
+
 public:
-	glm::vec3 mirrorPos = { 0, 4.5f, 4 };
-	glm::vec3 localPosition = { 0, 4.5f, -4 };
-	GLuint fbo;
 	FrameBuffer();
 	FrameBuffer(const char*, const char*);
-	void Update();
+
 	void CleanUp();
-	void DrawCubeFBOTex(glm::vec3, glm::vec3);
+	void DrawQuadFBOTex();
+	void Update(glm::vec3, glm::vec3);
+	glm::vec3 GetRearCameraPosition()const { return localPosition; }
 };

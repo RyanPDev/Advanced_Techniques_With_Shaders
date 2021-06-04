@@ -13,7 +13,6 @@
 
 //Struct de la llum, guarda tots els atributs que tenen els diferents tipus de llums.
 struct Light {
-
 	enum class EType
 	{
 		DIRECTIONAL = 1, POINTLIGHT, SPOTLIGHT, COUNT

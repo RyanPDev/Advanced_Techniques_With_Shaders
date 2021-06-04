@@ -6,12 +6,12 @@
 #include "Billboard.h"
 #include "Constants.h"
 #include "Texture.h"
-#include "Model.h"
 #include "FrameBuffer.h"
 
 // Declaració de la funció del loadCubemap
 extern unsigned int loadCubemap(std::vector<std::string> faces);
 
+#pragma region Variables globals
 Light light;
 Scene scene;
 std::vector<Object> objects; //--> Vector que emmagatzema els objectes que s'instancien a l'escena.
@@ -24,8 +24,11 @@ glm::vec3 cameraOffset = glm::vec3(1.25, -4.5, 1);
 bool isFirstPerson = false;
 bool usingInstancing = false;
 Shader objShader;
+Shader bbShader;
 int amount = 10;
 glm::mat4* modelMatrices;
+
+#pragma endregion
 
 namespace RenderVars {
 	float FOV = glm::radians(90.f);
@@ -178,190 +181,6 @@ namespace Axis {
 	}
 }
 
-////////////////////////////////////////////////// CUBE
-namespace Cube {
-	GLuint cubeVao;
-	GLuint cubeVbo[5];
-	GLuint textureID[6];
-	Shader cubeShader;
-	glm::mat4 objMat = glm::mat4(1.f);
-	unsigned char* data[6];
-	glm::vec3 position = glm::vec3(0, 3, 0), rotation = glm::vec3(0, 0, 0), scale = glm::vec3(4, 4, 4);
-	extern const float halfW = 0.5f;
-
-	int texWidth, texHeight, nrChannels;
-	int numVerts = 24 + 6; // 4 vertex/face * 6 faces + 6 PRIMITIVE RESTART
-						   //   4---------7
-						   //  /|        /|
-						   // / |       / |
-						   //5---------6  |
-						   //|  0------|--3
-						   //| /       | /
-						   //|/        |/
-						   //1---------2
-	glm::vec3 verts[] = {
-		glm::vec3(-halfW, -halfW, -halfW),
-		glm::vec3(-halfW, -halfW,  halfW),
-		glm::vec3(halfW, -halfW,  halfW),
-		glm::vec3(halfW, -halfW, -halfW),
-		glm::vec3(-halfW,  halfW, -halfW),
-		glm::vec3(-halfW,  halfW,  halfW),
-		glm::vec3(halfW,  halfW,  halfW),
-		glm::vec3(halfW,  halfW, -halfW)
-	};
-	glm::vec3 norms[] = {
-		glm::vec3(0.f, -1.f,  0.f),
-		glm::vec3(0.f,  1.f,  0.f),
-		glm::vec3(-1.f,  0.f,  0.f),
-		glm::vec3(1.f,  0.f,  0.f),
-		glm::vec3(0.f,  0.f, -1.f),
-		glm::vec3(0.f,  0.f,  1.f)
-	};
-
-	glm::vec2 texCoords[] = {
-		glm::vec2(0.f, 0.f), // Abajo izquierda
-		glm::vec2(0.f, 1.f), // Arriba izquierda
-		glm::vec2(1.f, 0.f), // Abajo derecha
-		glm::vec2(1.f, 1.f)  // Arriba derecha
-	};
-
-	glm::vec3 cubeVerts[] = {
-		verts[1], verts[0], verts[2], verts[3],
-		verts[5], verts[6], verts[4], verts[7],
-		verts[1], verts[5], verts[0], verts[4],
-		verts[2], verts[3], verts[6], verts[7],
-		verts[0], verts[4], verts[3], verts[7],
-		verts[1], verts[2], verts[5], verts[6]
-	};
-	glm::vec2 cubeTexCoords[] = { // Les uvs que pertanyeixen a cada vertex
-		texCoords[1], texCoords[0], texCoords[3], texCoords[2],
-		texCoords[0], texCoords[2], texCoords[1], texCoords[3],
-		texCoords[2], texCoords[3], texCoords[0], texCoords[1],
-		texCoords[0], texCoords[2], texCoords[1], texCoords[3],
-		texCoords[2], texCoords[3], texCoords[0], texCoords[1],
-		texCoords[0], texCoords[2], texCoords[1], texCoords[3]
-	};
-	glm::vec3 cubeNorms[] = {
-		norms[0], norms[0], norms[0], norms[0],
-		norms[1], norms[1], norms[1], norms[1],
-		norms[2], norms[2], norms[2], norms[2],
-		norms[3], norms[3], norms[3], norms[3],
-		norms[4], norms[4], norms[4], norms[4],
-		norms[5], norms[5], norms[5], norms[5]
-	};
-
-	GLubyte cubeIdx[] = {
-		0, 1, 2, 3, UCHAR_MAX,
-		4, 5, 6, 7, UCHAR_MAX,
-		8, 9, 10, 11, UCHAR_MAX,
-		12, 13, 14, 15, UCHAR_MAX,
-		16, 17, 18, 19, UCHAR_MAX,
-		20, 21, 22, 23, UCHAR_MAX
-	};
-
-	void setupCube() {
-		glGenVertexArrays(1, &cubeVao);
-		glBindVertexArray(cubeVao);
-
-		for (int i = 0; i < 6; i++)
-		{
-			data[i] = stbi_load(cubeTexture[i], &texWidth, &texHeight, &nrChannels, 0);
-			glGenTextures(1, &textureID[i]); //TEXTURES
-			glBindTexture(GL_TEXTURE_2D, textureID[i]); //TEXTURES
-
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-			if (data[i]) glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, texWidth, texHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, data[i]); //TEXTURES
-			else std::cout << "Failed to load texture" << std::endl;
-
-			stbi_image_free(data[i]);
-		}
-		// Array que determina quina textura s'aplica a cada vertex
-		int cubeTextures[] = {
-		textureID[0],textureID[0],textureID[0],textureID[0],
-		textureID[1],textureID[1],textureID[1],textureID[1],
-		textureID[2],textureID[2],textureID[2],textureID[2],
-		textureID[3],textureID[3],textureID[3],textureID[3],
-		textureID[4],textureID[4],textureID[4],textureID[4],
-		textureID[5],textureID[5],textureID[5],textureID[5]
-		};
-
-		glGenBuffers(5, cubeVbo);
-
-		glBindBuffer(GL_ARRAY_BUFFER, cubeVbo[0]);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(cubeVerts), cubeVerts, GL_STATIC_DRAW);
-		glVertexAttribPointer((GLuint)0, 3, GL_FLOAT, GL_FALSE, 0, 0);
-		glEnableVertexAttribArray(0);
-
-		glBindBuffer(GL_ARRAY_BUFFER, cubeVbo[1]);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(cubeNorms), cubeNorms, GL_STATIC_DRAW);
-		glVertexAttribPointer((GLuint)1, 3, GL_FLOAT, GL_FALSE, 0, 0);
-		glEnableVertexAttribArray(1);
-
-		glBindBuffer(GL_ARRAY_BUFFER, cubeVbo[2]);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(cubeTexCoords), cubeTexCoords, GL_STATIC_DRAW);
-		glVertexAttribPointer((GLuint)2, 2, GL_FLOAT, GL_FALSE, 0, 0);
-		glEnableVertexAttribArray(2);
-
-		glBindBuffer(GL_ARRAY_BUFFER, cubeVbo[3]);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(cubeTextures), cubeTextures, GL_STATIC_DRAW);
-		glVertexAttribPointer((GLuint)3, 1, GL_FLOAT, GL_FALSE, 0, 0);
-		glEnableVertexAttribArray(3);
-
-		glPrimitiveRestartIndex(UCHAR_MAX);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cubeVbo[4]);
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(cubeIdx), cubeIdx, GL_STATIC_DRAW);
-
-		glBindVertexArray(0);
-		glBindBuffer(GL_ARRAY_BUFFER, 0);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
-		cubeShader = Shader(cubeVS, cubeFS);
-	}
-
-	void cleanupCube() {
-		glDeleteBuffers(5, cubeVbo);
-		glDeleteVertexArrays(1, &cubeVao);
-		cubeShader.CleanUpShader();
-		for (int i = 0; i < 6; i++) glDeleteTextures(1, &textureID[i]);
-	}
-
-	void updateCube()
-	{
-		glm::mat4 t = glm::translate(glm::mat4(), position);
-		glm::mat4 r1 = glm::rotate(glm::mat4(), rotation.x, glm::vec3(1, 0, 0));
-		glm::mat4 r2 = glm::rotate(glm::mat4(), rotation.y + (ImGui::GetTime() * 0.5f), glm::vec3(0, 1, 0));
-		glm::mat4 r3 = glm::rotate(glm::mat4(), rotation.z, glm::vec3(0, 0, 1));
-		glm::mat4 s = glm::scale(glm::mat4(), scale);
-		objMat = t * r1 * r2 * r3 * s;
-	}
-
-	void draw() {
-		cubeShader.Use();
-		glEnable(GL_PRIMITIVE_RESTART);
-
-		glBindVertexArray(cubeVao);
-
-		cubeShader.SetMat4("objMat", 1, GL_FALSE, glm::value_ptr(objMat));
-		cubeShader.SetMat4("mv_Mat", 1, GL_FALSE, glm::value_ptr(RV::_modelView));
-		cubeShader.SetMat4("mvpMat", 1, GL_FALSE, glm::value_ptr(RV::_MVP));
-		cubeShader.SetFloat3("color", glm::vec3(1, 1, 1));
-		for (int i = 0; i < 6; i++)
-		{
-			cubeShader.SetInt("text" + std::to_string(i), i); // Setejem la unitat de textura
-			glActiveTexture(GL_TEXTURE0 + i);
-			glBindTexture(GL_TEXTURE_2D, textureID[i]);
-		}
-		glDrawElements(GL_TRIANGLE_STRIP, numVerts, GL_UNSIGNED_BYTE, 0);
-
-		glUseProgram(0);
-		glBindVertexArray(0);
-
-		glDisable(GL_PRIMITIVE_RESTART);
-	}
-}
-
 namespace CubeMap {
 	unsigned int skyboxVAO, skyboxVBO;
 	Shader cubeMapShader;
@@ -456,13 +275,13 @@ namespace CubeMap {
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 
 		glBindVertexArray(0);
-		//glUseProgram(0);
+		glUseProgram(0);
 	}
 }
 
 void GLinit(int width, int height) {
 	srand(static_cast<unsigned>(time(nullptr)));
-	stbi_set_flip_vertically_on_load(true);
+	stbi_set_flip_vertically_on_load(true); //--> Invertim verticalment la textura
 
 	glViewport(0, 0, width, height);
 	glClearColor(0.2f, 0.2f, 0.2f, 1.f);
@@ -478,21 +297,26 @@ void GLinit(int width, int height) {
 	Axis::setupAxis();
 	CubeMap::SetUp();
 
-	// Carguem i generem les textures
-	Texture camaroTexture(Texture::ETYPE::OBJ, carTexture);
-
-	Texture treeText01(Texture::ETYPE::BB, treeTexture1);
-	Texture treeText02(Texture::ETYPE::BB, treeTexture2);
-	Texture treeText03(Texture::ETYPE::BB, treeTexture3);
-
 	// Shaders
-	objShader = Shader(modelVS, modelFS);
+	objShader = Shader(modelVS, modelFS); //--> Shader de tots els models
+
+	bbShader = Shader(bbVS, bbFS, bbGS); //--> Shader de totes les billboards
 
 	frameBuffer = FrameBuffer(frameBufferVS, frameBufferFS);
 
+	// Carreguem i generem les textures
+	Texture camaroTexture(Texture::ETYPE::OBJ, carTexture); //--> Textura Cotxes
+
+
+	Texture treeText01(Texture::ETYPE::BB, treeTexture1); //--> Textura Billboard
+	Texture treeText02(Texture::ETYPE::BB, treeTexture2); //--> Textura Billboard
+	Texture treeText03(Texture::ETYPE::BB, treeTexture3); //--> Textura Billboard
+
+	Texture treeTextures[3] = { treeText01, treeText02, treeText03 };
+
 #pragma region Models
 
-	// Carguem i generem les models
+	// Carguem i generem els models
 	Model carModel(carObj);
 
 	// Crida al constructor de la classe amb els diferents objectes
@@ -501,19 +325,12 @@ void GLinit(int width, int height) {
 	// Emmagatzema els objectes creats al vector
 	objects.push_back(camaro);
 
-	/*for (int i = 0; i < amount; i++)
-	{
-		modelMatrices = new glm::mat4[amount];
-	}*/
 #pragma endregion Carreguem, generem i emmagatzemem els models
 
-	// Carreguem varies textures diferents per poder spawnejar billboards randomitzades
-
-	int random = 0;
-
 	// Creem i emmagatzemem billboards
-
-	// Alliberem memoria de textures
+	//Shader shader, glm::vec3 _vertexPos, unsigned int texId, int width, int height, const char* vertexPath, const char* fragmentPath, const char* geometryPath
+	Billboard tree1(bbShader, glm::vec3(0, 0, 0), treeTextures[0].GetID(), 5, 5);
+	billboards.push_back(tree1);
 
 	scene = Scene::PHONG; //--> Inicialitzem la primera escena
 }
@@ -522,10 +339,7 @@ void GLcleanup() {
 	Axis::cleanupAxis();
 	CubeMap::cleanup();
 
-	/////////////////////////////////////////////////////TODO
-	// Do your cleanup code here
-
-	//Cleanup per cada objecte dins del vector
+	// Cleanup per cada objecte dins del vector
 	for (Object obj : objects) obj.CleanUp();
 	objects.clear(); //--> Allibera memòria del vector d'objectes
 
@@ -534,6 +348,8 @@ void GLcleanup() {
 
 	frameBuffer.CleanUp();
 }
+
+// Funció que dibuixa (i actualitza) en ordre tots els elements de l'escena
 void RenderDraw()
 {
 	Axis::draw();
@@ -543,10 +359,11 @@ void RenderDraw()
 }
 
 void GLrender(float dt) {
-	
 	glEnable(GL_DEPTH_TEST);
 
 	RV::_modelView = glm::mat4(1);
+
+	// Càmara lliure (transformacions normals de la càmara + render d'escena normal
 	if (!isFirstPerson)
 	{
 		RV::_modelView = glm::translate(RV::_modelView, glm::vec3(RV::panv[0], RV::panv[1], RV::panv[2]));
@@ -557,26 +374,33 @@ void GLrender(float dt) {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		RenderDraw();
 	}
-	else {
-	#pragma region FrameBuffer
-		
+	else //--> Càmara 1a persona (dins d'un cotxe)
+	{
+#pragma region FrameBuffer
+
+		// 1er render (Escena que servira de textura al framebuffer object)
 		GLResize(800, 600);
 		glBindFramebuffer(GL_FRAMEBUFFER, frameBuffer.fbo);
 		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		RV::_modelView = glm::translate(RV::_modelView, frameBuffer.localPosition);
+		RV::_modelView = glm::translate(RV::_modelView, frameBuffer.GetRearCameraPosition());
 		RV::_modelView = glm::rotate(RV::_modelView, -objects[0].rotation.y, glm::vec3(0.0f, 1.0f, 0.0f));
 		RV::_modelView = glm::translate(RV::_modelView, -objects[0].position);
 		RV::_MVP = RV::_projection * RV::_modelView;
 
 		RenderDraw();
 
-		//-------------------------------------------------------------------------------//	
-		glBindVertexArray(0);
+#pragma endregion 1er render
+
+		//-------------------------------------------------------------------------------//
+
+#pragma region Escena
+		// 2n render (Escena dibuixada normal)
+		//glBindVertexArray(0);
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		GLResize(1800, 960);
-	#pragma endregion
+
 		RV::_modelView = glm::mat4(1);
 		RV::_modelView = glm::rotate(RV::_modelView, RV::rota[1], glm::vec3(1.f, 0.f, 0.f));
 		RV::_modelView = glm::rotate(RV::_modelView, RV::rota[0], glm::vec3(0.f, 1.f, 0.f));
@@ -584,10 +408,15 @@ void GLrender(float dt) {
 		RV::_modelView = glm::rotate(RV::_modelView, -objects[0].rotation.y - glm::pi<float>(), glm::vec3(0.0f, 1.0f, 0.0f));
 		RV::_modelView = glm::translate(RV::_modelView, -objects[0].position);
 		RV::_MVP = RV::_projection * RV::_modelView;
+
 		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
 		RenderDraw();
-		frameBuffer.DrawCubeFBOTex(objects[0].position,objects[0].rotation);
+
+		frameBuffer.Update(objects[0].position, objects[0].rotation); //--> Actualitza matriu d'objecte del frame buffer object per a que es mogui i roti amb el cotxe
+		frameBuffer.DrawQuadFBOTex(); //--> Dibuixa la textura de l'escena al quad (retrovisor central del cotxe)
+#pragma endregion 2n render
 	}
 
 	ImGui::Render();
@@ -597,26 +426,15 @@ void GUI()
 {
 	bool show = true;
 	ImGui::Begin("Physics Parameters", &show, 0);
-
 	ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 
-	/////////////////////////////////////////////////////TODO
-	// Do your GUI code here....
-
 	ImGui::Checkbox("First Person View", &isFirstPerson);
-	ImGui::DragFloat3("Camera Offset", (float*)&cameraOffset, 0.01f, -50.f, 50.f);
-	ImGui::DragFloat3("Mirror Position", (float*)&frameBuffer.mirrorPos, 0.01f, -50.f, 50.f);
-	ImGui::DragFloat3("Mirror Camera Position", (float*)&frameBuffer.localPosition, 0.01f, -50.f, 50.f);
+
+	if (isFirstPerson) ImGui::DragFloat3("Camera Offset", (float*)&cameraOffset, 0.01f, -50.f, 50.f);
 
 	ImGui::DragFloat3("Car Position", (float*)&objects[0].position, 0.01f, -50.f, 50.f);
-	ImGui::DragFloat3("Car Rotation", (float*)&objects[0].rotation, 0.01f, -360.f, 360.f);
+
+	ImGui::DragFloat("Car Rotation", (float*)&objects[0].rotation.y, 0.01f, -100, 100);
 
 	ImGui::End();
-
-	// Example code -- ImGui test window. Most of the sample code is in ImGui::ShowTestWindow()
-	bool show_test_window = false;
-	if (show_test_window) {
-		ImGui::SetNextWindowPos(ImVec2(650, 20), ImGuiSetCond_FirstUseEver);
-		ImGui::ShowTestWindow(&show_test_window);
-	}
 }

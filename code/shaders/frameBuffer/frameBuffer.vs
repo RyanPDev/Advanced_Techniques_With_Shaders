@@ -5,11 +5,11 @@ layout (location = 1) in vec2 aTexCoords;
 out vec2 TexCoords;
 
 uniform mat4 objm;
-uniform mat4 view;
-uniform mat4 projection;
+uniform mat4 mvp;
 
 void main()
 {
     TexCoords = aTexCoords;
-	gl_Position = projection * view * vec4(aPos, 1.0);
+	vec3 FragPos = vec3(objm * vec4(aPos, 1.0));
+	gl_Position = mvp * vec4(FragPos, 1.0);
 }

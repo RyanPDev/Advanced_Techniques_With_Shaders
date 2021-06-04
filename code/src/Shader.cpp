@@ -41,17 +41,17 @@ std::string Shader::ReadShaderFromFile(const char* shaderPath)
 
 	try
 	{
-		// obrir arxius
+		// Obrir arxius
 		shaderFile.open(shaderPath);
 		std::stringstream shaderStream;
 
-		// llegir el contingut del buffer i enviar ho al stream
+		// Llegir el contingut del buffer i enviar ho al stream
 		shaderStream << shaderFile.rdbuf();
 
 		// Tanquem el handler del arxiu
 		shaderFile.close();
 
-		// convertim el stream en una string
+		// Convertim el stream en una string
 		shaderCode = shaderStream.str();
 	}
 	catch (std::ifstream::failure e)

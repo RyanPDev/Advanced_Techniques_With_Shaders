@@ -5,13 +5,13 @@ class Billboard
 {
 private:
 	GLuint BillboardVao;
-	unsigned int textureID;
 	GLuint BillboardVbo;
+	unsigned int textureID;
 
 	Shader shader;
 
 public:
-	Billboard(glm::vec3, unsigned int, int, int, const char*, const char*, const char* = nullptr);
+	Billboard(Shader, glm::vec3, unsigned int, int, int);
 
 	glm::vec3 vertexPos;
 

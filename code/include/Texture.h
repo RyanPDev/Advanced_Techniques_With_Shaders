@@ -9,7 +9,7 @@ private:
 	unsigned int textureID;
 
 public:
-	enum class ETYPE { OBJ, BB, COUNT };
+	enum class ETYPE { OBJ, BB };
 	Texture(ETYPE, const char* = nullptr);
 
 	inline const unsigned int GetID()const { return textureID; }

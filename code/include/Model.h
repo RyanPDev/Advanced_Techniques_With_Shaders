@@ -1,5 +1,7 @@
 #pragma once
-#include "Utils.h"
+#include <vector>
+#include <iostream>
+#include <glm\gtc\type_ptr.hpp>
 
 class Model
 {
@@ -12,6 +14,7 @@ private:
 public:
 	Model(const char*);
 	~Model();
+
 	inline const std::vector<glm::vec3> GetVertices()const { return vertices; }
 	inline const std::vector<glm::vec2> GetUvs()const { return uvs; }
 	inline const std::vector<glm::vec3> GetNormals()const { return normals; }
