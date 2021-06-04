@@ -185,49 +185,49 @@ namespace CubeMap {
 	unsigned int skyboxVAO, skyboxVBO;
 	Shader cubeMapShader;
 
-	float skyboxVertices[] = {
+	glm::vec3 skyboxVertices[] = {
 		// positions          
-		-10.0f,  10.0f, -10.0f,
-		-10.0f, -10.0f, -10.0f,
-		 10.0f, -10.0f, -10.0f,
-		 10.0f, -10.0f, -10.0f,
-		 10.0f,  10.0f, -10.0f,
-		-10.0f,  10.0f, -10.0f,
-
-		-10.0f, -10.0f,  10.0f,
-		-10.0f, -10.0f, -10.0f,
-		-10.0f,  10.0f, -10.0f,
-		-10.0f,  10.0f, -10.0f,
-		-10.0f,  10.0f,  10.0f,
-		-10.0f, -10.0f,  10.0f,
-
-		 10.0f, -10.0f, -10.0f,
-		 10.0f, -10.0f,  10.0f,
-		 10.0f,  10.0f,  10.0f,
-		 10.0f,  10.0f,  10.0f,
-		 10.0f,  10.0f, -10.0f,
-		 10.0f, -10.0f, -10.0f,
-
-		-10.0f, -10.0f,  10.0f,
-		-10.0f,  10.0f,  10.0f,
-		 10.0f,  10.0f,  10.0f,
-		 10.0f,  10.0f,  10.0f,
-		 10.0f, -10.0f,  10.0f,
-		-10.0f, -10.0f,  10.0f,
-
-		-10.0f,  10.0f, -10.0f,
-		 10.0f,  10.0f, -10.0f,
-		 10.0f,  10.0f,  10.0f,
-		 10.0f,  10.0f,  10.0f,
-		-10.0f,  10.0f,  10.0f,
-		-10.0f,  10.0f, -10.0f,
-
-		-10.0f, -10.0f, -10.0f,
-		-10.0f, -10.0f,  10.0f,
-		 10.0f, -10.0f, -10.0f,
-		 10.0f, -10.0f, -10.0f,
-		-10.0f, -10.0f,  10.0f,
-		 10.0f, -10.0f,  10.0f
+		{-10.0f,  10.0f, -10.0f},
+		{-10.0f, -10.0f, -10.0f},
+		{ 10.0f, -10.0f, -10.0f},
+		{ 10.0f, -10.0f, -10.0f},
+		{ 10.0f,  10.0f, -10.0f},
+		{-10.0f,  10.0f, -10.0f},
+							   
+		{-10.0f, -10.0f,  10.0f},
+		{-10.0f, -10.0f, -10.0f},
+		{-10.0f,  10.0f, -10.0f},
+		{-10.0f,  10.0f, -10.0f},
+		{-10.0f,  10.0f,  10.0f},
+		{-10.0f, -10.0f,  10.0f},
+							   
+		{ 10.0f, -10.0f, -10.0f},
+		{ 10.0f, -10.0f,  10.0f},
+		{ 10.0f,  10.0f,  10.0f},
+		{ 10.0f,  10.0f,  10.0f},
+		{ 10.0f,  10.0f, -10.0f},
+		{ 10.0f, -10.0f, -10.0f},
+							   
+		{-10.0f, -10.0f,  10.0f},
+		{-10.0f,  10.0f,  10.0f},
+		{ 10.0f,  10.0f,  10.0f},
+		{ 10.0f,  10.0f,  10.0f},
+		{ 10.0f, -10.0f,  10.0f},
+		{-10.0f, -10.0f,  10.0f},
+							   
+		{-10.0f,  10.0f, -10.0f},
+		{ 10.0f,  10.0f, -10.0f},
+		{ 10.0f,  10.0f,  10.0f},
+		{ 10.0f,  10.0f,  10.0f},
+		{-10.0f,  10.0f,  10.0f},
+		{-10.0f,  10.0f, -10.0f},
+							   
+		{-10.0f, -10.0f, -10.0f},
+		{-10.0f, -10.0f,  10.0f},
+		{ 10.0f, -10.0f, -10.0f},
+		{ 10.0f, -10.0f, -10.0f},
+		{-10.0f, -10.0f,  10.0f},
+		{ 10.0f, -10.0f,  10.0f}
 	};
 
 	std::vector<std::string> faces
@@ -249,8 +249,8 @@ namespace CubeMap {
 		glBindVertexArray(skyboxVAO);
 		glBindBuffer(GL_ARRAY_BUFFER, skyboxVBO);
 		glBufferData(GL_ARRAY_BUFFER, sizeof(skyboxVertices), &skyboxVertices, GL_STATIC_DRAW);
+		glVertexAttribPointer((GLuint)0, 3, GL_FLOAT, GL_FALSE, 0, 0);
 		glEnableVertexAttribArray(0);
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 
 		cubeMapShader = Shader(skyBoxVS, skyBoxFS);
 	}
@@ -280,7 +280,7 @@ namespace CubeMap {
 }
 
 void GLinit(int width, int height) {
-	srand(static_cast<unsigned>(time(nullptr)));
+	srand(static_cast<unsigned>(time(nullptr))); //--> Seed del random
 	stbi_set_flip_vertically_on_load(true); //--> Invertim verticalment la textura
 
 	glViewport(0, 0, width, height);
@@ -327,7 +327,6 @@ void GLinit(int width, int height) {
 #pragma endregion Carreguem, generem i emmagatzemem els models
 
 	// Creem i emmagatzemem billboards
-	//Shader shader, glm::vec3 _vertexPos, unsigned int texId, int width, int height, const char* vertexPath, const char* fragmentPath, const char* geometryPath
 	Billboard tree1(bbShader, glm::vec3(0, 0, 0), treeTextures[0].GetID(), 5, 5);
 	billboards.push_back(tree1);
 
