@@ -52,6 +52,7 @@ const char* cubeFS = "shaders/cube/cubeShader.fs";
 // Imported Models
 const char* modelVS = "shaders/models/shader.vs";
 const char* modelFS = "shaders/models/shader.fs";
+const char* carFS = "shaders/models/carShader.fs";
 
 // Billboard
 const char* bbVS = "shaders/billboard/bbshader.vs";

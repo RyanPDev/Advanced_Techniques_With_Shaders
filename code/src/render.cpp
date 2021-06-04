@@ -298,7 +298,7 @@ void GLinit(int width, int height) {
 	CubeMap::SetUp();
 
 	// Shaders
-	objShader = Shader(modelVS, modelFS); //--> Shader de tots els models
+	objShader = Shader(modelVS, carFS);	 //--> Shader de tots els models
 	bbShader = Shader(bbVS, bbFS, bbGS); //--> Shader de totes les billboards
 
 	// FrameBuffer
@@ -319,7 +319,7 @@ void GLinit(int width, int height) {
 	Model carModel(carObj);
 
 	// Crida al constructor de la classe amb els diferents objectes
-	Object camaro(carModel, camaroTexture.GetID(), glm::vec3(-3.11f, 1.6f, 2.71f), glm::vec3(0, 4.71f, 0), glm::vec3(0.05f, 0.05f, 0.05f), objShader);
+	Object camaro(&carModel, camaroTexture.GetID(), glm::vec3(-3.11f, 1.6f, 2.71f), glm::vec3(0, 4.71f, 0), glm::vec3(0.05f, 0.05f, 0.05f), objShader);
 
 	// Emmagatzema els objectes creats al vector
 	objects.push_back(camaro);

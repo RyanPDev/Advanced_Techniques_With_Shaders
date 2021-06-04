@@ -1,11 +1,11 @@
 #include "Object.h"
 
-Object::Object(Model _model, unsigned int texId, glm::vec3 _startPos, glm::vec3 _startRot, glm::vec3 _startScale,
+Object::Object(Model* _model, unsigned int texId, glm::vec3 _startPos, glm::vec3 _startRot, glm::vec3 _startScale,
 	Shader _shader) : textureID(texId), position(_startPos), rotation(_startRot), scale(_startScale), 
 	initPos(_startPos), initRot(_startRot), initScale(_startScale), shader(_shader)
 {
-	numVertices = _model.GetVertices().size();
-	name = _model.GetName();
+	numVertices = _model->GetVertices().size();
+	name = _model->GetName();
 
 	glGenVertexArrays(1, &ObjVao);
 	glBindVertexArray(ObjVao);
@@ -13,17 +13,17 @@ Object::Object(Model _model, unsigned int texId, glm::vec3 _startPos, glm::vec3 
 	glGenBuffers(3, ObjVbo);
 
 	glBindBuffer(GL_ARRAY_BUFFER, ObjVbo[0]);
-	glBufferData(GL_ARRAY_BUFFER, numVertices * sizeof(glm::vec3), &_model.GetVertices()[0], GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, numVertices * sizeof(glm::vec3), &_model->GetVertices()[0], GL_STATIC_DRAW);
 	glVertexAttribPointer((GLuint)0, 3, GL_FLOAT, GL_FALSE, 0, 0);
 	glEnableVertexAttribArray(0);
 
 	glBindBuffer(GL_ARRAY_BUFFER, ObjVbo[1]);
-	glBufferData(GL_ARRAY_BUFFER, _model.GetUvs().size() * sizeof(glm::vec2), &_model.GetUvs()[0], GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, _model->GetUvs().size() * sizeof(glm::vec2), &_model->GetUvs()[0], GL_STATIC_DRAW);
 	glVertexAttribPointer((GLuint)1, 2, GL_FLOAT, GL_FALSE, 0, 0);
 	glEnableVertexAttribArray(1);
 
 	glBindBuffer(GL_ARRAY_BUFFER, ObjVbo[2]);
-	glBufferData(GL_ARRAY_BUFFER, _model.GetNormals().size() * sizeof(glm::vec3), &_model.GetNormals()[0], GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, _model->GetNormals().size() * sizeof(glm::vec3), &_model->GetNormals()[0], GL_STATIC_DRAW);
 	glVertexAttribPointer((GLuint)2, 3, GL_FLOAT, GL_FALSE, 0, 0);
 	glEnableVertexAttribArray(2);
 
