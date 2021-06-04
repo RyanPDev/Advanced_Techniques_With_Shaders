@@ -32,12 +32,12 @@ FrameBuffer::FrameBuffer(const char* vertexPath, const char* fragmentPath)
 	glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 
 	// Creem la textura
-	glGenTextures(1, &fbo_tex);
-	glBindTexture(GL_TEXTURE_2D, fbo_tex);
+	glGenTextures(1, &fboTexture);
+	glBindTexture(GL_TEXTURE_2D, fboTexture);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 800, 600, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, fbo_tex, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, fboTexture, 0);
 
 	// Generem un Render Buffer Object pel depth buffer
 	unsigned int rbo;
@@ -69,7 +69,7 @@ void FrameBuffer::DrawQuadFBOTex()
 	shader.Use();
 
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, fbo_tex);
+	glBindTexture(GL_TEXTURE_2D, fboTexture);
 
 	glBindVertexArray(vao);
 
@@ -91,5 +91,5 @@ void FrameBuffer::CleanUp()
 	glDeleteVertexArrays(1, &vao);
 	glDeleteBuffers(2, vbo);
 
-	glDeleteTextures(1, &fbo_tex);
+	glDeleteTextures(1, &fboTexture);
 }

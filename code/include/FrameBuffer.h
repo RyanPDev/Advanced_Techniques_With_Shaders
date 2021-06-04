@@ -9,7 +9,7 @@ public:
 private:
 	GLuint vao;
 	GLuint vbo[2];
-	GLuint fbo_tex;
+	GLuint fboTexture;
 
 	Shader shader;
 
