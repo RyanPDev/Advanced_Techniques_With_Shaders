@@ -299,14 +299,13 @@ void GLinit(int width, int height) {
 
 	// Shaders
 	objShader = Shader(modelVS, modelFS); //--> Shader de tots els models
-
 	bbShader = Shader(bbVS, bbFS, bbGS); //--> Shader de totes les billboards
 
+	// FrameBuffer
 	frameBuffer = FrameBuffer(frameBufferVS, frameBufferFS);
 
 	// Carreguem i generem les textures
 	Texture camaroTexture(Texture::ETYPE::OBJ, carTexture); //--> Textura Cotxes
-
 
 	Texture treeText01(Texture::ETYPE::BB, treeTexture1); //--> Textura Billboard
 	Texture treeText02(Texture::ETYPE::BB, treeTexture2); //--> Textura Billboard
