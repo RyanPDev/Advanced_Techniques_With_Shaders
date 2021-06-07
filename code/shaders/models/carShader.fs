@@ -14,6 +14,7 @@
 	uniform float diffuseStrength;
 	uniform float specularStrength;
 	uniform float shininessValue;
+	uniform bool Stencil;
 	vec3 norm;
 	float diff;
 	vec3 ambient;
@@ -28,11 +29,11 @@
 	void main(){
 			
 		FragColor = texture(diffuseTexture, Uvs);
-		if (FragColor.a < 0.9f) 
+		if (FragColor.a < 0.9f && !Stencil) 
+			discard;
+		else if(Stencil && FragColor.a >= 0.9f)
 			discard;
 		else{
-
-		
 		// AMBIENT // 
 		ambient = ambientStrength * lightColor * ambientColor;
 		
@@ -49,7 +50,6 @@
 		specular = specularStrength * spec * lightColor;
 		result = (ambient + diffuse + (specular * specularColor)) * lightIntensity;
 		
-		FragColor *= vec4(result, 1.0);
+		FragColor *= vec4(result, 0.3f);
 		}
-		
 }

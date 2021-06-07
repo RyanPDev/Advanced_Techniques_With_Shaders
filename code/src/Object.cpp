@@ -53,7 +53,11 @@ void Object::Draw(Light light)
 	glBindTexture(GL_TEXTURE_2D, textureID);
 
 	glBindVertexArray(ObjVao);
-
+	if (usingStencil)
+	{
+		shader.SetBool("Stencil", true);
+	}
+	else { shader.SetBool("Stencil", false); }
 	// Variables que pasem als shaders com a uniforms per ser usats per la gràfica
 	shader.SetMat4("model", 1, GL_FALSE, glm::value_ptr(objMat));
 	shader.SetMat4("view", 1, GL_FALSE, glm::value_ptr(RenderVars::_modelView));

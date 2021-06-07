@@ -14,6 +14,7 @@ private:
 
 	int numVertices;
 public:
+	bool usingStencil = false;
 	Object(Model*, unsigned int, glm::vec3, glm::vec3, glm::vec3, Shader);
 
 	glm::vec3 position, rotation, scale;
