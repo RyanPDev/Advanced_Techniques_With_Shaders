@@ -364,6 +364,7 @@ void GLrender(float dt) {
 	// Càmara lliure (transformacions normals de la càmara + render d'escena normal
 	if (!isFirstPerson)
 	{
+	
 		RV::_modelView = glm::translate(RV::_modelView, glm::vec3(RV::panv[0], RV::panv[1], RV::panv[2]));
 		RV::_modelView = glm::rotate(RV::_modelView, RV::rota[1], glm::vec3(1.f, 0.f, 0.f));
 		RV::_modelView = glm::rotate(RV::_modelView, RV::rota[0], glm::vec3(0.f, 1.f, 0.f));
@@ -377,6 +378,7 @@ void GLrender(float dt) {
 #pragma region FrameBuffer
 
 		// 1er render (Escena que servira de textura al framebuffer object)
+		RV::FOV = 70.f;
 		GLResize(800, 600);
 
 		glBindFramebuffer(GL_FRAMEBUFFER, frameBuffer.fbo);
@@ -398,6 +400,7 @@ void GLrender(float dt) {
 		// 2n render (Escena dibuixada normal)
 		//glBindVertexArray(0);
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		RV::FOV = 90.f;
 		GLResize(1800, 960);
 
 		RV::_modelView = glm::mat4(1);
