@@ -407,7 +407,7 @@ void GLrender(float dt) {
 #pragma region FrameBuffer
 
 		// 1er render (Escena que servira de textura al framebuffer object)
-		RV::FOV = MIRRORFOV;
+		RV::FOV = MIRROR_FOV;
 		glViewport(0, 0, 800, 600);
 		RV::_projection = glm::perspective(glm::radians(RV::FOV), 1.33f, RV::zNear, RV::zFar); // 1.33f = 800 / 600
 
@@ -440,7 +440,7 @@ void GLrender(float dt) {
 		RV::_modelView = glm::rotate(RV::_modelView, RV::rota[1], glm::vec3(1.f, 0.f, 0.f));
 		RV::_modelView = glm::rotate(RV::_modelView, RV::rota[0], glm::vec3(0.f, 1.f, 0.f));
 		RV::_modelView = glm::translate(RV::_modelView, cameraOffset);
-		RV::_modelView = glm::rotate(RV::_modelView, -objects[0].rotation.y - glm::pi<float>(), glm::vec3(0.0f, 1.0f, 0.0f));
+		RV::_modelView = glm::rotate(RV::_modelView, -objects[0].rotation.y - PI, glm::vec3(0.0f, 1.0f, 0.0f));
 		RV::_modelView = glm::translate(RV::_modelView, -objects[0].position);
 		RV::_MVP = RV::_projection * RV::_modelView;
 
