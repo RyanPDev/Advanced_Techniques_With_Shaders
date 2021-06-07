@@ -378,6 +378,7 @@ void GLrender(float dt) {
 
 		// 1er render (Escena que servira de textura al framebuffer object)
 		GLResize(800, 600);
+
 		glBindFramebuffer(GL_FRAMEBUFFER, frameBuffer.fbo);
 		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -429,6 +430,7 @@ void GUI()
 	ImGui::Checkbox("First Person View", &isFirstPerson);
 
 	if (isFirstPerson) ImGui::DragFloat3("Camera Offset", (float*)&cameraOffset, 0.01f, -50.f, 50.f);
+	ImGui::DragFloat3("Mirror Position", (float*)&frameBuffer.localPosition, 0.01f, -50.f, 50.f);
 
 	ImGui::DragFloat3("Car Position", (float*)&objects[0].position, 0.01f, -50.f, 50.f);
 
