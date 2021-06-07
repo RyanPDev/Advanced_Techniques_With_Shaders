@@ -378,7 +378,7 @@ void GLrender(float dt) {
 #pragma region FrameBuffer
 
 		// 1er render (Escena que servira de textura al framebuffer object)
-		RV::FOV = 70.f;
+		RV::FOV = MIRRORFOV;
 		GLResize(800, 600);
 
 		glBindFramebuffer(GL_FRAMEBUFFER, frameBuffer.fbo);

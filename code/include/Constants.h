@@ -4,6 +4,9 @@ const int NUM_BILLBOARDS{ 10 };
 
 const float PI{ glm::pi<float>() };
 
+
+const float MIRRORFOV = 70;
+
 #pragma region Obj
 
 // Cat
