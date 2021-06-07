@@ -21,7 +21,7 @@ FrameBuffer frameBuffer;
 
 int gWidth, gHeight;
 
-glm::vec3 cameraOffset = glm::vec3(1.25, -4.5, 1);
+glm::vec3 cameraOffset = glm::vec3(1.71, -4.55, 0.53);
 
 bool isFirstPerson = false;
 bool usingInstancing = false;
@@ -86,7 +86,7 @@ void GLResize(int width, int height) {
 	else RV::_projection = glm::perspective(glm::radians(RV::FOV), 0.f, RV::zNear, RV::zFar);
 	gWidth = width;
 	gHeight = height;
-	
+
 }
 
 void GLmousecb(MouseEvent ev) {
@@ -198,35 +198,35 @@ namespace CubeMap {
 		{ 10.0f, -10.0f, -10.0f},
 		{ 10.0f,  10.0f, -10.0f},
 		{-10.0f,  10.0f, -10.0f},
-							   
+
 		{-10.0f, -10.0f,  10.0f},
 		{-10.0f, -10.0f, -10.0f},
 		{-10.0f,  10.0f, -10.0f},
 		{-10.0f,  10.0f, -10.0f},
 		{-10.0f,  10.0f,  10.0f},
 		{-10.0f, -10.0f,  10.0f},
-							   
+
 		{ 10.0f, -10.0f, -10.0f},
 		{ 10.0f, -10.0f,  10.0f},
 		{ 10.0f,  10.0f,  10.0f},
 		{ 10.0f,  10.0f,  10.0f},
 		{ 10.0f,  10.0f, -10.0f},
 		{ 10.0f, -10.0f, -10.0f},
-							   
+
 		{-10.0f, -10.0f,  10.0f},
 		{-10.0f,  10.0f,  10.0f},
 		{ 10.0f,  10.0f,  10.0f},
 		{ 10.0f,  10.0f,  10.0f},
 		{ 10.0f, -10.0f,  10.0f},
 		{-10.0f, -10.0f,  10.0f},
-							   
+
 		{-10.0f,  10.0f, -10.0f},
 		{ 10.0f,  10.0f, -10.0f},
 		{ 10.0f,  10.0f,  10.0f},
 		{ 10.0f,  10.0f,  10.0f},
 		{-10.0f,  10.0f,  10.0f},
 		{-10.0f,  10.0f, -10.0f},
-							   
+
 		{-10.0f, -10.0f, -10.0f},
 		{-10.0f, -10.0f,  10.0f},
 		{ 10.0f, -10.0f, -10.0f},
@@ -361,27 +361,28 @@ void RenderDraw()
 	CubeMap::draw();
 	Axis::draw();
 	for (Object obj : objects) { obj.Update(); obj.Draw(light); }
-
 }
+
 void drawStencilBuffer()
 {
-	glEnable(GL_STENCIL_TEST);
-	glStencilFunc(GL_ALWAYS, 1, 0xFF);
-	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-	glEnable(GL_BLEND);
-	glStencilMask(0xFF);
-	objects[0].usingStencil = true;
-	objects[0].Draw(light);
-	glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
-	glStencilMask(0x00);
-	glDisable(GL_BLEND);
+	glEnable(GL_STENCIL_TEST); //--> Activem stencil
 
+	glStencilFunc(GL_ALWAYS, 1, 0xFF); //--> Tots els fragments passen l'stencil test
+	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+	glEnable(GL_BLEND); //--> Activem el blend per aplicar transparència a les finestres
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glStencilMask(0xFF); //--> Permet escriure al stencil buffer
+	objects[0].usingStencil = true;
+	objects[0].Draw(light); //--> Dibuixem el primer cotxe descartant tots els fragments excepte els de les finestres
+	glStencilFunc(GL_NOTEQUAL, 1, 0xFF); //--> Només es dibuixa el que no sigui = a 1 (finestres)
+	glDisable(GL_BLEND); //--> Desactivem blending per a que no s'apliqui transparència a la resta del cotxe
+	glStencilMask(0x00); //--> Desactivem la opció d'escriptura al stencil buffer
 	objects[0].usingStencil = false;
-	objects[0].Draw(light);
+	objects[0].Draw(light); //--> Dibuixem 2n cotxe descartant els fragments de les finestres
 	glStencilMask(0xFF);
 	glStencilFunc(GL_ALWAYS, 1, 0xFF);
-	glDisable(GL_STENCIL_TEST);
+
+	glDisable(GL_STENCIL_TEST); //--> Activem stencil
 }
 
 void GLrender(float dt) {
@@ -392,7 +393,7 @@ void GLrender(float dt) {
 	// Càmara lliure (transformacions normals de la càmara + render d'escena normal
 	if (!isFirstPerson)
 	{
-	
+
 		RV::_modelView = glm::translate(RV::_modelView, glm::vec3(RV::panv[0], RV::panv[1], RV::panv[2]));
 		RV::_modelView = glm::rotate(RV::_modelView, RV::rota[1], glm::vec3(1.f, 0.f, 0.f));
 		RV::_modelView = glm::rotate(RV::_modelView, RV::rota[0], glm::vec3(0.f, 1.f, 0.f));
@@ -407,7 +408,7 @@ void GLrender(float dt) {
 
 		// 1er render (Escena que servira de textura al framebuffer object)
 		RV::FOV = MIRRORFOV;
-		glViewport(0,0,800, 600);
+		glViewport(0, 0, 800, 600);
 		RV::_projection = glm::perspective(glm::radians(RV::FOV), 1.33f, RV::zNear, RV::zFar); // 1.33f = 800 / 600
 
 		glBindFramebuffer(GL_FRAMEBUFFER, frameBuffer.fbo);
@@ -423,7 +424,6 @@ void GLrender(float dt) {
 
 		objects[0].Update();
 		drawStencilBuffer();
-		//glBindVertexArray(0);
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 #pragma endregion 1er render
@@ -435,7 +435,7 @@ void GLrender(float dt) {
 		// 2n render (Escena dibuixada normal)
 		RV::FOV = 90.f;
 		GLResize(gWidth, gHeight);
- 
+
 		RV::_modelView = glm::mat4(1);
 		RV::_modelView = glm::rotate(RV::_modelView, RV::rota[1], glm::vec3(1.f, 0.f, 0.f));
 		RV::_modelView = glm::rotate(RV::_modelView, RV::rota[0], glm::vec3(0.f, 1.f, 0.f));
@@ -444,7 +444,6 @@ void GLrender(float dt) {
 		RV::_modelView = glm::translate(RV::_modelView, -objects[0].position);
 		RV::_MVP = RV::_projection * RV::_modelView;
 
-#pragma region Stencil
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 		CubeMap::draw();
 		Axis::draw();
@@ -452,10 +451,8 @@ void GLrender(float dt) {
 		objects[0].Update();
 		frameBuffer.Update(objects[0].position, objects[0].rotation); //--> Actualitza matriu d'objecte del frame buffer object per a que es mogui i roti amb el cotxe
 		frameBuffer.DrawQuadFBOTex(); //--> Dibuixa la textura de l'escena al quad (retrovisor central del cotxe)
-		drawStencilBuffer();
-	
 
-#pragma endregion
+		drawStencilBuffer(); //--> Dibuixa les finestres d'un 2n segon cotxe dibuixat amb stencil i aplicant blend per a que es vegi la semitransparència
 
 #pragma endregion 2n render
 	}
