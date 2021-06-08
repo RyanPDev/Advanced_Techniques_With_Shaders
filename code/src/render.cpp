@@ -552,5 +552,7 @@ void GUI()
 	if (isFirstPerson) ImGui::DragFloat3("Camera Offset", (float*)&cameraOffset, 0.01f, -50.f, 50.f);
 	ImGui::DragFloat3("Mirror Position", (float*)&frameBuffer.localPosition, 0.01f, -50.f, 50.f);
 
+	ImGui::DragFloat("Window Alpha", &camaro.windowAlpha, 0.05f, 0, 1);
+
 	ImGui::End();
 }

@@ -14,6 +14,7 @@
 	uniform float diffuseStrength;
 	uniform float specularStrength;
 	uniform float shininessValue;
+	uniform float alphaIntensity;
 	uniform bool Stencil;
 	vec3 norm;
 	float diff;
@@ -50,6 +51,6 @@
 		specular = specularStrength * spec * lightColor;
 		result = (ambient + diffuse + (specular * specularColor)) * lightIntensity;
 		
-		FragColor *= vec4(result, 0.4f);
+		FragColor *= vec4(result, alphaIntensity);
 		}
 }

@@ -20,6 +20,7 @@ public:
 
 	glm::vec3 position, rotation, scale;
 	glm::mat4 objMat;
+	float windowAlpha = 0.4f;
 	bool usingStencil = false;
 
 	void Update();

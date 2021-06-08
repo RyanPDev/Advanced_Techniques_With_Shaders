@@ -83,6 +83,7 @@ void Object::Draw(Light light)
 	shader.SetFloat3("specularColor", light.specularColor);
 	shader.SetFloat("shininessValue", light.shininessValue);
 
+	shader.SetFloat("alphaIntensity", windowAlpha);
 	glDrawArrays(GL_TRIANGLES, 0, numVertices);
 	glUseProgram(0);
 	glBindVertexArray(0);
@@ -105,6 +106,7 @@ void Object::Draw(Light light, glm::mat4 objMat[])
 		shader.SetMat4("model[" + std::to_string(i)+"]", 1, GL_FALSE, glm::value_ptr(objMat[i]));
 	}
 
+	shader.SetFloat("alphaIntensity", windowAlpha);
 	shader.SetMat4("view", 1, GL_FALSE, glm::value_ptr(RenderVars::_modelView));
 	shader.SetMat4("projection", 1, GL_FALSE, glm::value_ptr(RenderVars::_projection));
 	shader.SetFloat3("lightColor", light.color);
