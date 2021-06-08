@@ -24,7 +24,7 @@ public:
 
 	void Update();
 	void Draw(Light);
-	void Draw(float, float, float, bool, bool);
+	void Draw(Light, glm::mat4[]);
 	void CleanUp();
 
 	std::string GetName() { return name; } //--> Retorna el nom de l'objecte corresponent per poder "printar-lo" per pantalla

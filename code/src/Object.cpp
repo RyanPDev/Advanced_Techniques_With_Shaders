@@ -57,7 +57,6 @@ void Object::Draw(Light light)
 	shader.Use();
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, textureID);
-	
 
 	glBindVertexArray(ObjVao);
 
@@ -89,24 +88,43 @@ void Object::Draw(Light light)
 	glBindVertexArray(0);
 }
 
-void Object::Draw(float currentTime, float auxTime, float magnitude, bool startAnimation, bool shouldSubdivide)
+void Object::Draw(Light light, glm::mat4 objMat[])
 {
-	if (startAnimation) currentTime = (sin(ImGui::GetTime() - auxTime) + 1.0) / 2.0;
-
 	shader.Use();
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, textureID);
 
 	glBindVertexArray(ObjVao);
-	shader.SetMat4("model", 1, GL_FALSE, glm::value_ptr(objMat));
+
+	// Variables que pasem als shaders com a uniforms per ser usats per la gràfica
+	if (usingStencil) shader.SetBool("Stencil", true);
+	else shader.SetBool("Stencil", false);
+
+	for (int i = 0; i < 10; i++)
+	{
+		shader.SetMat4("model[" + std::to_string(i)+"]", 1, GL_FALSE, glm::value_ptr(objMat[i]));
+	}
+
 	shader.SetMat4("view", 1, GL_FALSE, glm::value_ptr(RenderVars::_modelView));
 	shader.SetMat4("projection", 1, GL_FALSE, glm::value_ptr(RenderVars::_projection));
+	shader.SetFloat3("lightColor", light.color);
+	shader.SetFloat3("lightPos", light.position);
+	shader.SetFloat3("spotLightDir", light.spotLightDirection);
+	shader.SetFloat("lightIntensity", light.intensity);
+	shader.SetInt("attenuationActive", light.attenuationActivated);
+	shader.SetInt("lightType", (int)light.type);
+	shader.SetFloat("constant", light.constant);
+	shader.SetFloat("linear", light.linear);
+	shader.SetFloat("quadratic", light.quadratic);
+	shader.SetFloat("cutOff", light.cutOff);
+	shader.SetFloat("ambientStrength", light.ambientIntensity);
+	shader.SetFloat3("ambientColor", light.ambientColor);
+	shader.SetFloat("diffuseStrength", light.diffuseIntensity);
+	shader.SetFloat("specularStrength", light.specularIntensity);
+	shader.SetFloat3("specularColor", light.specularColor);
+	shader.SetFloat("shininessValue", light.shininessValue);
 
-	shader.SetFloat("time", currentTime);
-	shader.SetFloat("magnitude", magnitude);
-	shader.SetBool("shouldSubdivide", shouldSubdivide);
-
-	glDrawArrays(GL_TRIANGLES, 0, numVertices);
+	glDrawArraysInstanced(GL_TRIANGLES, 0, numVertices, 10);
 	glUseProgram(0);
 	glBindVertexArray(0);
 }

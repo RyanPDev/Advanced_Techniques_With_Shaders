@@ -4,9 +4,9 @@
 
 #include "Object.h"
 #include "Billboard.h"
-#include "Constants.h"
 #include "Texture.h"
 #include "FrameBuffer.h"
+#include "Constants.h"
 
 // Declaració de la funció del loadCubemap
 extern unsigned int loadCubemap(std::vector<std::string> faces);
@@ -20,6 +20,8 @@ std::vector<Object> objects; //--> Vector que emmagatzema els objectes que s'ins
 std::vector<Billboard> billboards; //--> Vector que emmagatzema les billboards que s'instancien a l'escena.
 std::string s; //--> String declarat global per no redeclarar-lo a cada frame. S'usa pels noms del ImGui.
 
+glm::mat4 objMat[10];
+
 Shader carShader;
 Shader objShader;
 Shader bbShader;
@@ -28,41 +30,45 @@ int gWidth, gHeight;
 glm::vec3 cameraOffset = glm::vec3(1.71, -4.55, 0.53);
 bool isFirstPerson = false;
 bool usingInstancing = false;
-int amount = 10;
-
-
 
 struct Movement {
-	glm::vec3 nodes[4];
+
+	glm::vec3 nodes[6];
 	int currentNode = 0;
 	float timer = 0;
 
 	Movement::Movement()
 	{
-		for (int i = 0; i < 4; i++)
+		for (int i = 0; i < 6; i++)
 		{
-			nodes[i] = glm::vec3((rand() % 80) - 40, 0, (rand() % 80) - 40);
+			nodes[i] = glm::vec3((rand() % 300) - 150, 0, (rand() % 300) - 150);
 			if (i > 0)
 			{
 				bool isValid = true;
 				do
 				{
-					if (glm::distance(nodes[i], nodes[i - 1]) < 10.f)
+					if (glm::distance(nodes[i], nodes[i - 1]) < 30.f)
 					{
 						isValid = false;
-						nodes[i] = glm::vec3((rand() % 80) - 40, 0, (rand() % 80) - 40);
+						nodes[i] = glm::vec3((rand() % 300) - 150, 0, (rand() % 300) - 150);
 					}
-					else isValid = true; 
+					else isValid = true;
 				} while (!isValid);
 			}
 		}
 	}
 
-	void MoveCar(glm::vec3& postion, glm::vec3& rotacion, float dt)
+	void MoveCar(glm::mat4& objMat, float dt)
 	{
 		timer += (dt * 0.1f);
-		postion = glm::mix(nodes[currentNode], nodes[(currentNode + 1) % 4], timer);
-		
+		glm::mat4 t = glm::translate(glm::mat4(), glm::mix(nodes[currentNode], nodes[(currentNode + 1) % 4], timer));
+		glm::mat4 r1 = glm::rotate(glm::mat4(), camaro.rotation.x, glm::vec3(1, 0, 0));
+		glm::mat4 r2 = glm::rotate(glm::mat4(), camaro.rotation.y, glm::vec3(0, 1, 0));
+		glm::mat4 r3 = glm::rotate(glm::mat4(), camaro.rotation.z, glm::vec3(0, 0, 1));
+		glm::mat4 s = glm::scale(glm::mat4(), glm::vec3(0.05f));
+
+		objMat = t * r1 * r2 * r3 * s;
+
 		if (timer >= 1)
 		{
 			timer = 0;
@@ -339,7 +345,6 @@ void GLinit(int width, int height) {
 	glClearDepth(1.f);
 	glDepthFunc(GL_LEQUAL);
 	glEnable(GL_DEPTH_TEST);
-	//glEnable(GL_CULL_FACE);
 
 	RV::_projection = glm::perspective(RV::FOV, (float)width / (float)height, RV::zNear, RV::zFar);
 
@@ -349,7 +354,7 @@ void GLinit(int width, int height) {
 	CubeMap::SetUp();
 
 	// Shaders
-	carShader = Shader(modelVS, carFS);	 //--> Shader de tots els models
+	carShader = Shader(instancingVS, carFS);	 //--> Shader de tots els models
 	objShader = Shader(modelVS, modelFS);	 //--> Shader de tots els models
 	bbShader = Shader(bbVS, bbFS, bbGS); //--> Shader de totes les billboards
 
@@ -377,25 +382,29 @@ void GLinit(int width, int height) {
 	// Crida al constructor de la classe amb els diferents objectes
 	camaro = Object(&carModel, camaroTexture.GetID(), glm::vec3(0), glm::vec3(0, 4.71f, 0), glm::vec3(0.05f, 0.05f, 0.05f), carShader);
 	Object floor(&floorModel, floorTexture.GetID(), glm::vec3(0), glm::vec3(0), glm::vec3(1), objShader);
-	Object tree(&treeModel, treeTexture.GetID(), glm::vec3(-10, 0, 10), glm::vec3(0), glm::vec3(1), objShader);
 
 	// Emmagatzema els objectes creats al vector
 	objects.push_back(floor);
-	objects.push_back(tree);
+	for (int i = 0; i < 10; i++)
+	{
+		Object tree(&treeModel, treeTexture.GetID(), glm::vec3((rand() % 200) - 100, 0, (rand() % 200) - 100), glm::vec3(0), glm::vec3(1), objShader);
+		objects.push_back(tree);
+	}
 
 #pragma endregion Carreguem, generem i emmagatzemem els models
 
 	// Creem i emmagatzemem billboards
-	Billboard tree1(bbShader, glm::vec3(10, 0, 10), treeTextures[0].GetID());
-	billboards.push_back(tree1);
-	
-	for (int i = 0; i < amount; i++)
+	for (int i = 0; i < 10; i++)
+	{
+		Billboard tree(bbShader, glm::vec3((rand() % 340) - 170, 0, (rand() % 340) - 170), treeTextures[0].GetID());
+		billboards.push_back(tree);
+	}
+
+	for (int i = 0; i < MAX_CARS; i++)
 	{
 		Movement carMovement;
 		carMovements[i] = carMovement;
 	}
-
-	scene = Scene::PHONG; //--> Inicialitzem la primera escena
 }
 
 void GLcleanup() {
@@ -413,24 +422,29 @@ void GLcleanup() {
 }
 
 // Funció que dibuixa (i actualitza) en ordre tots els elements de l'escena
-void RenderDraw()
+void RenderDraw(float dt)
 {
 	glStencilMask(0x00);
 	CubeMap::draw();
 	Axis::draw();
+	for (int i = 0; i < MAX_CARS; i++)
+	{
+		objMat[i] = camaro.objMat;
+		carMovements[i].MoveCar(objMat[i], dt);
+	}
+
 	for (Object obj : objects) { obj.Update(); obj.Draw(light); }
-	for (Billboard bb : billboards) { bb.Draw(20, 20); }
+	for (Billboard bb : billboards) { bb.Draw(20, 30); }
 }
 
 void drawStencilBuffer()
 {
 	glEnable(GL_STENCIL_TEST); //--> Activem stencil
 
-	//glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 	glStencilFunc(GL_ALWAYS, 1, 0xFF); //--> Tots els fragments passen l'stencil test
 	glStencilMask(0xFF);
 	camaro.usingStencil = false;
-	camaro.Draw(light); //--> Dibuixem 1er cotxe descartant els fragments de les finestres
+	camaro.Draw(light); //--> Dibuixem 1er cotxe descartant els fragments de les finestres	
 
 	glEnable(GL_BLEND); //--> Activem el blend per aplicar transparència a les finestres
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -442,7 +456,6 @@ void drawStencilBuffer()
 	glStencilFunc(GL_ALWAYS, 1, 0xFF);
 	glDisable(GL_BLEND); //--> Desactivem blending per a que no s'apliqui transparència a la resta del cotxe
 
-	//glStencilMask(0x00); //--> Desactivem la opció d'escriptura al stencil buffer
 	glDisable(GL_STENCIL_TEST); //--> Desactivem stencil
 	camaro.usingStencil = false;
 }
@@ -461,10 +474,9 @@ void GLrender(float dt) {
 		RV::_MVP = RV::_projection * RV::_modelView;
 		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		RenderDraw();
-		carMovements[0].MoveCar(camaro.position, camaro.rotation, dt);
+		RenderDraw(dt);
 		camaro.Update();
-		camaro.Draw(light);
+		camaro.Draw(light, objMat);
 	}
 	else //--> Càmara 1a persona (dins d'un cotxe)
 	{
@@ -483,8 +495,7 @@ void GLrender(float dt) {
 		RV::_modelView = glm::rotate(RV::_modelView, -camaro.rotation.y, glm::vec3(0.0f, 1.0f, 0.0f));
 		RV::_modelView = glm::translate(RV::_modelView, -camaro.position);
 		RV::_MVP = RV::_projection * RV::_modelView;
-		RenderDraw();
-		carMovements[0].MoveCar(camaro.position, camaro.rotation, dt);
+		RenderDraw(dt);
 		camaro.Update();
 		drawStencilBuffer();
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -509,8 +520,8 @@ void GLrender(float dt) {
 
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
-		RenderDraw();
-		
+		RenderDraw(dt);
+
 		camaro.Update();
 		frameBuffer.Update(camaro.position, camaro.rotation); //--> Actualitza matriu d'objecte del frame buffer object per a que es mogui i roti amb el cotxe
 		frameBuffer.DrawQuadFBOTex(); //--> Dibuixa la textura de l'escena al quad (retrovisor central del cotxe)
@@ -534,28 +545,28 @@ void GUI()
 	if (isFirstPerson) ImGui::DragFloat3("Camera Offset", (float*)&cameraOffset, 0.01f, -50.f, 50.f);
 	ImGui::DragFloat3("Mirror Position", (float*)&frameBuffer.localPosition, 0.01f, -50.f, 50.f);
 
-	ImGui::DragFloat3("Car Position", (float*)&camaro.position, 0.01f, -50.f, 50.f);
+	//ImGui::DragFloat3("Car Position", (float*)&camaro.position, 0.01f, -50.f, 50.f);
 
-	ImGui::DragFloat("Car Rotation", (float*)&camaro.rotation.y, 0.01f, -100, 100);
+	//ImGui::DragFloat("Car Rotation", (float*)&camaro.rotation.y, 0.01f, -100, 100);
 
-	for (int i = 0; i < objects.size(); i++)
-	{
-		ImGui::PushID(i);
-		s = objects[i].GetName() + " " + std::to_string(i) + " Position";
-		ImGui::DragFloat3(s.c_str(), (float*)&objects[i].position, 0.1f, -500.f, 500.f);
-		s = objects[i].GetName() + " " + std::to_string(i) + " Rotation";
-		ImGui::DragFloat3(s.c_str(), (float*)&objects[i].rotation, 0.1f, -500.f, 500.f);
-		s = objects[i].GetName() + " " + std::to_string(i) + " Scale";
-		ImGui::DragFloat3(s.c_str(), (float*)&objects[i].scale, 0.01f, 0.f, 50.f);
-		ImGui::PopID();
-	}
-	for (int i = 0; i < billboards.size(); i++)
-	{
-		ImGui::PushID(i);
-		s = "Billboard " + std::to_string(i) + " Position";
-		ImGui::DragFloat3(s.c_str(), (float*)&billboards[i].vertexPos, 0.1f, -500.f, 500.f);
-		ImGui::PopID();
-	}
+	//for (int i = 0; i < objects.size(); i++)
+	//{
+	//	ImGui::PushID(i);
+	//	s = objects[i].GetName() + " " + std::to_string(i) + " Position";
+	//	ImGui::DragFloat3(s.c_str(), (float*)&objects[i].position, 0.1f, -500.f, 500.f);
+	//	s = objects[i].GetName() + " " + std::to_string(i) + " Rotation";
+	//	ImGui::DragFloat3(s.c_str(), (float*)&objects[i].rotation, 0.1f, -500.f, 500.f);
+	//	s = objects[i].GetName() + " " + std::to_string(i) + " Scale";
+	//	ImGui::DragFloat3(s.c_str(), (float*)&objects[i].scale, 0.01f, 0.f, 50.f);
+	//	ImGui::PopID();
+	//}
+	//for (int i = 0; i < billboards.size(); i++)
+	//{
+	//	ImGui::PushID(i);
+	//	s = "Billboard " + std::to_string(i) + " Position";
+	//	ImGui::DragFloat3(s.c_str(), (float*)&billboards[i].vertexPos, 0.1f, -500.f, 500.f);
+	//	ImGui::PopID();
+	//}
 
 
 	ImGui::End();

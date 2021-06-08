@@ -4,6 +4,8 @@ const int NUM_BILLBOARDS{ 10 };
 
 const float MIRROR_FOV{ 70 };
 
+const float MAX_CARS{ 10 };
+
 const float PI{ glm::pi<float>() };
 
 #pragma region Obj
@@ -61,6 +63,7 @@ const char* cubeFS = "shaders/cube/cubeShader.fs";
 const char* modelVS = "shaders/models/shader.vs";
 const char* modelFS = "shaders/models/shader.fs";
 const char* carFS = "shaders/models/carShader.fs";
+const char* instancingVS = "shaders/models/instancing.vs";
 
 // Billboard
 const char* bbVS = "shaders/billboard/bbshader.vs";
