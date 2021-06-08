@@ -1,8 +1,6 @@
 #include "FrameBuffer.h"
 
-FrameBuffer::FrameBuffer()
-{
-}
+FrameBuffer::FrameBuffer() {}
 
 FrameBuffer::FrameBuffer(const char* vertexPath, const char* fragmentPath)
 {

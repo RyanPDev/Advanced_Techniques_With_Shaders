@@ -545,29 +545,5 @@ void GUI()
 	if (isFirstPerson) ImGui::DragFloat3("Camera Offset", (float*)&cameraOffset, 0.01f, -50.f, 50.f);
 	ImGui::DragFloat3("Mirror Position", (float*)&frameBuffer.localPosition, 0.01f, -50.f, 50.f);
 
-	//ImGui::DragFloat3("Car Position", (float*)&camaro.position, 0.01f, -50.f, 50.f);
-
-	//ImGui::DragFloat("Car Rotation", (float*)&camaro.rotation.y, 0.01f, -100, 100);
-
-	//for (int i = 0; i < objects.size(); i++)
-	//{
-	//	ImGui::PushID(i);
-	//	s = objects[i].GetName() + " " + std::to_string(i) + " Position";
-	//	ImGui::DragFloat3(s.c_str(), (float*)&objects[i].position, 0.1f, -500.f, 500.f);
-	//	s = objects[i].GetName() + " " + std::to_string(i) + " Rotation";
-	//	ImGui::DragFloat3(s.c_str(), (float*)&objects[i].rotation, 0.1f, -500.f, 500.f);
-	//	s = objects[i].GetName() + " " + std::to_string(i) + " Scale";
-	//	ImGui::DragFloat3(s.c_str(), (float*)&objects[i].scale, 0.01f, 0.f, 50.f);
-	//	ImGui::PopID();
-	//}
-	//for (int i = 0; i < billboards.size(); i++)
-	//{
-	//	ImGui::PushID(i);
-	//	s = "Billboard " + std::to_string(i) + " Position";
-	//	ImGui::DragFloat3(s.c_str(), (float*)&billboards[i].vertexPos, 0.1f, -500.f, 500.f);
-	//	ImGui::PopID();
-	//}
-
-
 	ImGui::End();
 }
