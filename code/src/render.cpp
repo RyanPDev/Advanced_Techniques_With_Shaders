@@ -62,9 +62,9 @@ struct Movement {
 	{
 		timer += (dt * 0.1f);
 		glm::mat4 t = glm::translate(glm::mat4(), glm::mix(nodes[currentNode], nodes[(currentNode + 1) % 4], timer));
-		glm::mat4 r1 = glm::rotate(glm::mat4(), camaro.rotation.x, glm::vec3(1, 0, 0));
-		glm::mat4 r2 = glm::rotate(glm::mat4(), camaro.rotation.y, glm::vec3(0, 1, 0));
-		glm::mat4 r3 = glm::rotate(glm::mat4(), camaro.rotation.z, glm::vec3(0, 0, 1));
+		glm::mat4 r1 = glm::rotate(glm::mat4(), 0.f, glm::vec3(1, 0, 0));
+		glm::mat4 r2 = glm::rotate(glm::mat4(), 0.f, glm::vec3(0, 1, 0));
+		glm::mat4 r3 = glm::rotate(glm::mat4(), 0.f, glm::vec3(0, 0, 1));
 		glm::mat4 s = glm::scale(glm::mat4(), glm::vec3(0.05f));
 
 		objMat = t * r1 * r2 * r3 * s;
@@ -380,7 +380,7 @@ void GLinit(int width, int height) {
 	Model treeModel(treeObj);
 
 	// Crida al constructor de la classe amb els diferents objectes
-	camaro = Object(&carModel, camaroTexture.GetID(), glm::vec3(0), glm::vec3(0, 4.71f, 0), glm::vec3(0.05f, 0.05f, 0.05f), carShader);
+	camaro = Object(&carModel, camaroTexture.GetID(), glm::vec3(0), glm::vec3(0, 0, 0), glm::vec3(0.05f, 0.05f, 0.05f), carShader);
 	Object floor(&floorModel, floorTexture.GetID(), glm::vec3(0), glm::vec3(0), glm::vec3(1), objShader);
 
 	// Emmagatzema els objectes creats al vector
@@ -427,11 +427,10 @@ void RenderDraw(float dt)
 	glStencilMask(0x00);
 	CubeMap::draw();
 	Axis::draw();
-	for (int i = 0; i < MAX_CARS; i++)
-	{
-		objMat[i] = camaro.objMat;
-		carMovements[i].MoveCar(objMat[i], dt);
-	}
+
+	
+	
+
 
 	for (Object obj : objects) { obj.Update(); obj.Draw(light); }
 	for (Billboard bb : billboards) { bb.Draw(20, 30); }
@@ -444,14 +443,14 @@ void drawStencilBuffer()
 	glStencilFunc(GL_ALWAYS, 1, 0xFF); //--> Tots els fragments passen l'stencil test
 	glStencilMask(0xFF);
 	camaro.usingStencil = false;
-	camaro.Draw(light); //--> Dibuixem 1er cotxe descartant els fragments de les finestres	
+	camaro.Draw(light, objMat); //--> Dibuixem 1er cotxe descartant els fragments de les finestres	
 
 	glEnable(GL_BLEND); //--> Activem el blend per aplicar transparència a les finestres
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glStencilFunc(GL_NOTEQUAL, 1, 0xFF); //--> Només es dibuixa el que no sigui = a 1 (finestres)
 	glStencilMask(0x00); //--> Desactivem la opció d'escriptura al stencil buffer
 	camaro.usingStencil = true;
-	camaro.Draw(light); //--> Dibuixem el segon cotxe descartant tots els fragments excepte els de les finestres
+	camaro.Draw(light, objMat); //--> Dibuixem el segon cotxe descartant tots els fragments excepte els de les finestres
 	glStencilMask(0xFF); //--> Permet escriure al stencil buffer
 	glStencilFunc(GL_ALWAYS, 1, 0xFF);
 	glDisable(GL_BLEND); //--> Desactivem blending per a que no s'apliqui transparència a la resta del cotxe
@@ -466,6 +465,14 @@ void GLrender(float dt) {
 	RV::_modelView = glm::mat4(1);
 
 	// Càmara lliure (transformacions normals de la càmara + render d'escena normal
+	for (int i = 0; i < MAX_CARS; i++)
+	{
+		objMat[i] = glm::mat4(1);
+		carMovements[i].MoveCar(objMat[i], dt);
+	}
+	camaro.position = glm::mix(carMovements[0].nodes[carMovements[0].currentNode], carMovements[0].nodes[(carMovements[0].currentNode + 1) % 4], carMovements[0].timer);
+	camaro.objMat = objMat[0];
+
 	if (!isFirstPerson)
 	{
 		RV::_modelView = glm::translate(RV::_modelView, glm::vec3(RV::panv[0], RV::panv[1], RV::panv[2]));
@@ -475,7 +482,7 @@ void GLrender(float dt) {
 		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		RenderDraw(dt);
-		camaro.Update();
+		//camaro.Update();
 		camaro.Draw(light, objMat);
 	}
 	else //--> Càmara 1a persona (dins d'un cotxe)
@@ -496,7 +503,7 @@ void GLrender(float dt) {
 		RV::_modelView = glm::translate(RV::_modelView, -camaro.position);
 		RV::_MVP = RV::_projection * RV::_modelView;
 		RenderDraw(dt);
-		camaro.Update();
+		//camaro.Update();
 		drawStencilBuffer();
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
@@ -522,7 +529,7 @@ void GLrender(float dt) {
 
 		RenderDraw(dt);
 
-		camaro.Update();
+		//camaro.Update();
 		frameBuffer.Update(camaro.position, camaro.rotation); //--> Actualitza matriu d'objecte del frame buffer object per a que es mogui i roti amb el cotxe
 		frameBuffer.DrawQuadFBOTex(); //--> Dibuixa la textura de l'escena al quad (retrovisor central del cotxe)
 
