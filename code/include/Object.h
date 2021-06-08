@@ -13,13 +13,14 @@ private:
 	glm::vec3 initPos, initRot, initScale;
 
 	int numVertices;
+	Shader shader;
 public:
-	bool usingStencil = false;
+	Object();
 	Object(Model*, unsigned int, glm::vec3, glm::vec3, glm::vec3, Shader);
 
 	glm::vec3 position, rotation, scale;
-	Shader shader;
 	glm::mat4 objMat;
+	bool usingStencil = false;
 
 	void Update();
 	void Draw(Light);

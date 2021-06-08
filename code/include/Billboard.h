@@ -6,12 +6,11 @@ class Billboard
 private:
 	GLuint BillboardVao;
 	GLuint BillboardVbo;
+	Shader shader;
 	unsigned int textureID;
 
-	Shader shader;
-
 public:
-	Billboard(Shader, glm::vec3, unsigned int, int, int);
+	Billboard(Shader, glm::vec3, unsigned int);
 
 	glm::vec3 vertexPos;
 

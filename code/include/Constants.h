@@ -11,15 +11,18 @@ const float PI{ glm::pi<float>() };
 // Cat
 const char* catObj = "obj/cat.obj";
 
-//Car
+// Car
 const char* carObj = "obj/camaro.obj";
+
+// Floor
+const char* floorObj = "obj/floor.obj";
+
+// Tree
+const char* treeObj = "obj/deadTree.obj";
 
 #pragma endregion
 
 #pragma region Texture Paths
-
-//Car
-const char* carTexture = "materials/Camaro_AlbedoTransparency_alt.png";
 
 // Cube
 const char* cubeTextureC = "materials/checker_box.jpg";
@@ -38,6 +41,9 @@ const char* treeTexture3 = "materials/tree_texture3.png";
 
 // Models
 const char* catTexture = "materials/cat_texture.jpg";
+const char* carTexture = "materials/Camaro_AlbedoTransparency_alt.png";
+const char* floorTexture = "materials/floor_texture.jpg";
+const char* treeTexture = "materials/treeTexture.jpg";
 
 #pragma endregion
 

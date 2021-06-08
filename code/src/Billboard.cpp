@@ -1,7 +1,6 @@
 #include "Billboard.h"
 
-Billboard::Billboard(Shader shader, glm::vec3 _vertexPos, unsigned int texId, int width, int height)
-	: vertexPos(_vertexPos), textureID(texId)
+Billboard::Billboard(Shader _shader, glm::vec3 _vertexPos, unsigned int texId) : shader(_shader), vertexPos(_vertexPos), textureID(texId)
 {
 	glGenVertexArrays(1, &BillboardVao);
 	glBindVertexArray(BillboardVao);
@@ -16,8 +15,6 @@ Billboard::Billboard(Shader shader, glm::vec3 _vertexPos, unsigned int texId, in
 	glBindVertexArray(0);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
-	//shader = Shader(vertexPath, fragmentPath, geometryPath);
 }
 
 void Billboard::Draw(float _width, float _height)

@@ -18,7 +18,10 @@ Texture::Texture(ETYPE type, const char* texturePath)
 		stbi_image_free(data);
 	}
 
-	if (type == ETYPE::OBJ) glGenerateMipmap(GL_TEXTURE_2D);
+	if (type == ETYPE::OBJ)
+	{
+		glGenerateMipmap(GL_TEXTURE_2D);
+	}
 	else
 	{
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);

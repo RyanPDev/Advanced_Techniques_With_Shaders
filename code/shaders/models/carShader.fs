@@ -50,6 +50,6 @@
 		specular = specularStrength * spec * lightColor;
 		result = (ambient + diffuse + (specular * specularColor)) * lightIntensity;
 		
-		FragColor *= vec4(result, 0.3f);
+		FragColor *= vec4(result, 0.4f);
 		}
 }

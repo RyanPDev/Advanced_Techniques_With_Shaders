@@ -1,7 +1,9 @@
 #include "Object.h"
 
+Object::Object() {}
+
 Object::Object(Model* _model, unsigned int texId, glm::vec3 _startPos, glm::vec3 _startRot, glm::vec3 _startScale,
-	Shader _shader) : textureID(texId), position(_startPos), rotation(_startRot), scale(_startScale), 
+	Shader _shader) : textureID(texId), position(_startPos), rotation(_startRot), scale(_startScale),
 	initPos(_startPos), initRot(_startRot), initScale(_startScale), shader(_shader)
 {
 	numVertices = _model->GetVertices().size();
@@ -31,9 +33,13 @@ Object::Object(Model* _model, unsigned int texId, glm::vec3 _startPos, glm::vec3
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
+	shader.Use();
+
 	glBindAttribLocation(shader.GetID(), 0, "aPos");
 	glBindAttribLocation(shader.GetID(), 1, "aUvs");
 	glBindAttribLocation(shader.GetID(), 2, "aNormal");
+
+	shader.SetInt("diffuseTexture", 0);
 }
 
 void Object::Update()
@@ -43,7 +49,7 @@ void Object::Update()
 	glm::mat4 r2 = glm::rotate(glm::mat4(), rotation.y, glm::vec3(0, 1, 0));
 	glm::mat4 r3 = glm::rotate(glm::mat4(), rotation.z, glm::vec3(0, 0, 1));
 	glm::mat4 s = glm::scale(glm::mat4(), scale);
-	objMat = t * r1 * r2 * r3 * s;	
+	objMat = t * r1 * r2 * r3 * s;
 }
 
 void Object::Draw(Light light)
@@ -51,14 +57,13 @@ void Object::Draw(Light light)
 	shader.Use();
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, textureID);
+	
 
 	glBindVertexArray(ObjVao);
-	if (usingStencil)
-	{
-		shader.SetBool("Stencil", true);
-	}
-	else { shader.SetBool("Stencil", false); }
+
 	// Variables que pasem als shaders com a uniforms per ser usats per la gràfica
+	if (usingStencil) shader.SetBool("Stencil", true);
+	else shader.SetBool("Stencil", false);
 	shader.SetMat4("model", 1, GL_FALSE, glm::value_ptr(objMat));
 	shader.SetMat4("view", 1, GL_FALSE, glm::value_ptr(RenderVars::_modelView));
 	shader.SetMat4("projection", 1, GL_FALSE, glm::value_ptr(RenderVars::_projection));
