@@ -368,6 +368,7 @@ void GLcleanup() {
 // Funció que dibuixa (i actualitza) en ordre tots els elements de l'escena
 void RenderDraw()
 {
+	glStencilMask(0x00);
 	CubeMap::draw();
 	Axis::draw();
 	for (Object obj : objects) { obj.Update(); obj.Draw(light); }
@@ -378,24 +379,23 @@ void drawStencilBuffer()
 {
 	glEnable(GL_STENCIL_TEST); //--> Activem stencil
 
+	//glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 	glStencilFunc(GL_ALWAYS, 1, 0xFF); //--> Tots els fragments passen l'stencil test
-	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-	
-	glStencilMask(0x00); //--> Desactivem la opció d'escriptura al stencil buffer
-	camaro.usingStencil = false;
-	camaro.Draw(light); //--> Dibuixem 2n cotxe descartant els fragments de les finestres
 	glStencilMask(0xFF);
-	glStencilFunc(GL_NOTEQUAL, 1, 0xFF); //--> Només es dibuixa el que no sigui = a 1 (finestres)
-
+	camaro.usingStencil = false;
+	camaro.Draw(light); //--> Dibuixem 1er cotxe descartant els fragments de les finestres
+	
 	glEnable(GL_BLEND); //--> Activem el blend per aplicar transparència a les finestres
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	glStencilMask(0xFF); //--> Permet escriure al stencil buffer
+	glStencilFunc(GL_NOTEQUAL, 1, 0xFF); //--> Només es dibuixa el que no sigui = a 1 (finestres)
+	glStencilMask(0x00); //--> Desactivem la opció d'escriptura al stencil buffer
 	camaro.usingStencil = true;
-	camaro.Draw(light); //--> Dibuixem el primer cotxe descartant tots els fragments excepte els de les finestres
+	camaro.Draw(light); //--> Dibuixem el segon cotxe descartant tots els fragments excepte els de les finestres
+	glStencilMask(0xFF); //--> Permet escriure al stencil buffer
 	glStencilFunc(GL_ALWAYS, 1, 0xFF);
 	glDisable(GL_BLEND); //--> Desactivem blending per a que no s'apliqui transparència a la resta del cotxe
 
-	glStencilMask(0x00); //--> Desactivem la opció d'escriptura al stencil buffer
+	//glStencilMask(0x00); //--> Desactivem la opció d'escriptura al stencil buffer
 	glDisable(GL_STENCIL_TEST); //--> Desactivem stencil
 	camaro.usingStencil = false;
 }

@@ -6,7 +6,7 @@ class FrameBuffer
 public:
 	GLuint fbo;
 
-	glm::vec3 localPosition = { 0, -4.56f, 3.65f };
+	glm::vec3 localPosition = { 0, -5.13f, 3.65f };
 private:
 	GLuint vao;
 	GLuint vbo[2];
