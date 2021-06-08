@@ -12,25 +12,66 @@
 extern unsigned int loadCubemap(std::vector<std::string> faces);
 
 #pragma region Variables globals
+
 Light light;
 Scene scene;
 Object camaro;
 std::vector<Object> objects; //--> Vector que emmagatzema els objectes que s'instancien a l'escena.
 std::vector<Billboard> billboards; //--> Vector que emmagatzema les billboards que s'instancien a l'escena.
 std::string s; //--> String declarat global per no redeclarar-lo a cada frame. S'usa pels noms del ImGui.
+
 Shader carShader;
 Shader objShader;
 Shader bbShader;
 FrameBuffer frameBuffer;
-
 int gWidth, gHeight;
-
 glm::vec3 cameraOffset = glm::vec3(1.71, -4.55, 0.53);
-
 bool isFirstPerson = false;
 bool usingInstancing = false;
 int amount = 10;
-glm::mat4* modelMatrices;
+
+
+
+struct Movement {
+	glm::vec3 nodes[4];
+	int currentNode = 0;
+	float timer = 0;
+
+	Movement::Movement()
+	{
+		for (int i = 0; i < 4; i++)
+		{
+			nodes[i] = glm::vec3((rand() % 80) - 40, 0, (rand() % 80) - 40);
+			if (i > 0)
+			{
+				bool isValid = true;
+				do
+				{
+					if (glm::distance(nodes[i], nodes[i - 1]) < 10.f)
+					{
+						isValid = false;
+						nodes[i] = glm::vec3((rand() % 80) - 40, 0, (rand() % 80) - 40);
+					}
+					else isValid = true; 
+				} while (!isValid);
+			}
+		}
+	}
+
+	void MoveCar(glm::vec3& postion, glm::vec3& rotacion, float dt)
+	{
+		timer += (dt * 0.1f);
+		postion = glm::mix(nodes[currentNode], nodes[(currentNode + 1) % 4], timer);
+		
+		if (timer >= 1)
+		{
+			timer = 0;
+			currentNode = (currentNode + 1) % 4;
+		}
+	}
+};
+
+Movement carMovements[10];
 
 #pragma endregion
 
@@ -347,6 +388,12 @@ void GLinit(int width, int height) {
 	// Creem i emmagatzemem billboards
 	Billboard tree1(bbShader, glm::vec3(10, 0, 10), treeTextures[0].GetID());
 	billboards.push_back(tree1);
+	
+	for (int i = 0; i < amount; i++)
+	{
+		Movement carMovement;
+		carMovements[i] = carMovement;
+	}
 
 	scene = Scene::PHONG; //--> Inicialitzem la primera escena
 }
@@ -384,7 +431,7 @@ void drawStencilBuffer()
 	glStencilMask(0xFF);
 	camaro.usingStencil = false;
 	camaro.Draw(light); //--> Dibuixem 1er cotxe descartant els fragments de les finestres
-	
+
 	glEnable(GL_BLEND); //--> Activem el blend per aplicar transparència a les finestres
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glStencilFunc(GL_NOTEQUAL, 1, 0xFF); //--> Només es dibuixa el que no sigui = a 1 (finestres)
@@ -415,6 +462,7 @@ void GLrender(float dt) {
 		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		RenderDraw();
+		carMovements[0].MoveCar(camaro.position, camaro.rotation, dt);
 		camaro.Update();
 		camaro.Draw(light);
 	}
@@ -436,11 +484,11 @@ void GLrender(float dt) {
 		RV::_modelView = glm::translate(RV::_modelView, -camaro.position);
 		RV::_MVP = RV::_projection * RV::_modelView;
 		RenderDraw();
-
+		carMovements[0].MoveCar(camaro.position, camaro.rotation, dt);
 		camaro.Update();
 		drawStencilBuffer();
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-		
+
 #pragma endregion 1er render
 
 		//-------------------------------------------------------------------------------//
@@ -460,8 +508,9 @@ void GLrender(float dt) {
 		RV::_MVP = RV::_projection * RV::_modelView;
 
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-	
+
 		RenderDraw();
+		
 		camaro.Update();
 		frameBuffer.Update(camaro.position, camaro.rotation); //--> Actualitza matriu d'objecte del frame buffer object per a que es mogui i roti amb el cotxe
 		frameBuffer.DrawQuadFBOTex(); //--> Dibuixa la textura de l'escena al quad (retrovisor central del cotxe)
